@@ -24,7 +24,9 @@ See `docs/DESIGN.md` for the full architecture discussion.
 ## Status (2026-07-06)
 
 - Milestone 1 done: viewer works (pan/zoom, click → detail panel, neighbor highlighting, search, URL-hash deep links) against the hand-written requests graph. User approved the demo.
-- Next milestone: real pipeline — static analysis of `examples/requests` → LLM grouping → generated graph.json.
+- Milestone 2a done: `tools/analyze.py` extracts ground-truth skeletons (ast-based import graph). Validated on requests: all 12 hand-written edges confirmed by real imports; 65 raw core edges show why LLM aggregation is needed.
+- **Next: milestone 2b — LLM grouping step.** Input: `examples/requests.skeleton.json` + file docs → Claude (structured output) → component hierarchy + aggregated labeled edges → graph.json for the existing viewer. Quality benchmark: match or beat the hand-written `examples/requests.graph.json`.
+- API access: `ANTHROPIC_API_KEY` goes in `~/.bashrc` (user has a key; may not be set up on every machine — verify before running LLM steps). `api.anthropic.com` is NOT intercepted by the SealSuite gateway; direct TLS works.
 
 ## Conventions
 
