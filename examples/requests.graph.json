@@ -1,0 +1,224 @@
+{
+  "meta": {
+    "title": "Requests — Architecture",
+    "repo": "psf/requests",
+    "repoUrl": "https://github.com/psf/requests",
+    "commit": "main",
+    "generated": "2026-07-05",
+    "tagline": "HTTP for Humans — how a requests.get() actually happens"
+  },
+  "nodes": [
+    {
+      "id": "api",
+      "label": "Public API",
+      "sublabel": "api.py",
+      "kind": "component",
+      "x": 60, "y": 300,
+      "summary": "The friendly one-liners everyone imports: requests.get(), post(), put()...",
+      "detail": "<p>This is the famous surface of the library — and it is almost empty. Every function (<code>get</code>, <code>post</code>, <code>head</code>, ...) funnels into <code>requests.request()</code>, which creates a <em>fresh, throwaway</em> <code>Session</code> inside a context manager for each call. All real behavior lives in the Session engine.</p><p><strong>Practical consequence:</strong> calling the module-level API in a loop forfeits connection pooling — each call builds and tears down a Session. Long-lived code should hold its own <code>Session</code>.</p>",
+      "files": [
+        { "path": "src/requests/api.py", "url": "https://github.com/psf/requests/blob/main/src/requests/api.py" }
+      ]
+    },
+    {
+      "id": "sessions",
+      "label": "Session Engine",
+      "sublabel": "sessions.py",
+      "kind": "component",
+      "x": 340, "y": 300,
+      "summary": "The orchestrator: merges settings, prepares requests, routes them to adapters, follows redirects.",
+      "detail": "<p><code>Session.request()</code> is the heart of the library. It merges per-call arguments with session-level defaults (headers, auth, proxies, cookies), wraps them in a <code>Request</code>, prepares it into a <code>PreparedRequest</code>, and hands it to <code>Session.send()</code>.</p><p><code>send()</code> picks a transport adapter by longest URL-prefix match (<code>mount()</code> registers adapters — by default <code>https://</code> and <code>http://</code> both map to <code>HTTPAdapter</code>), dispatches the request, resolves redirects via the <code>resolve_redirects</code> generator, persists cookies, and fires response hooks.</p>",
+      "files": [
+        { "path": "src/requests/sessions.py", "url": "https://github.com/psf/requests/blob/main/src/requests/sessions.py" }
+      ]
+    },
+    {
+      "id": "models",
+      "label": "Models",
+      "sublabel": "models.py",
+      "kind": "component",
+      "x": 680, "y": 110,
+      "summary": "Request → PreparedRequest → Response: the three data objects every call flows through.",
+      "detail": "<p><code>Request</code> is the user's intent; <code>PreparedRequest</code> is the fully-baked HTTP message — URL parsed and percent-encoded, headers merged, body encoded (form / JSON / multipart via <code>prepare_body</code>), auth applied, Cookie header rendered. This split is deliberate: you can inspect or modify a <code>PreparedRequest</code> before sending it.</p><p><code>Response</code> wraps the raw urllib3 reply: lazy <code>content</code> / <code>text</code> / <code>json()</code>, <code>raise_for_status()</code>, streaming via <code>iter_content()</code>, and a link back to the request and its redirect <code>history</code>.</p>",
+      "files": [
+        { "path": "src/requests/models.py", "url": "https://github.com/psf/requests/blob/main/src/requests/models.py" }
+      ]
+    },
+    {
+      "id": "adapters",
+      "label": "Transport Adapters",
+      "sublabel": "adapters.py",
+      "kind": "component",
+      "x": 680, "y": 340,
+      "summary": "HTTPAdapter: the bridge from requests' world to urllib3's connection pools.",
+      "detail": "<p><code>HTTPAdapter</code> owns a urllib3 <code>PoolManager</code> — this is where connection pooling, TLS verification, client certs, retries, and proxy handling are configured. Its <code>send()</code> performs the actual network I/O, and <code>build_response()</code> converts the raw urllib3 reply into a requests <code>Response</code>.</p><p>The adapter interface is the library's main extension point: mount a custom adapter on a Session to change transport behavior (custom TLS contexts, testing mocks, retry policies) without touching user code.</p>",
+      "files": [
+        { "path": "src/requests/adapters.py", "url": "https://github.com/psf/requests/blob/main/src/requests/adapters.py" }
+      ]
+    },
+    {
+      "id": "urllib3",
+      "label": "urllib3",
+      "sublabel": "external dependency",
+      "kind": "external",
+      "x": 980, "y": 340,
+      "summary": "The third-party HTTP engine underneath every request.",
+      "detail": "<p>urllib3 does the low-level work requests deliberately hides: connection pools, TLS handshakes, timeouts, chunked transfer, low-level retries. Requests' value proposition is the humane API on top — but the power of urllib3 remains reachable through <code>HTTPAdapter</code> configuration.</p>",
+      "files": [
+        { "path": "urllib3/urllib3", "url": "https://github.com/urllib3/urllib3" }
+      ]
+    },
+    {
+      "id": "auth",
+      "label": "Auth",
+      "sublabel": "auth.py",
+      "kind": "component",
+      "x": 980, "y": 80,
+      "summary": "Callable auth objects: Basic, Proxy, and stateful Digest authentication.",
+      "detail": "<p>Auth in requests is just a callable that mutates a <code>PreparedRequest</code>. <code>HTTPBasicAuth</code> and <code>HTTPProxyAuth</code> set a header at prepare time and are done.</p><p><code>HTTPDigestAuth</code> is the interesting one: it is stateful and registers a <em>response hook</em> — when the server answers 401 with a challenge, the hook computes the digest and replays the request. A neat example of the hooks system used internally.</p>",
+      "files": [
+        { "path": "src/requests/auth.py", "url": "https://github.com/psf/requests/blob/main/src/requests/auth.py" }
+      ]
+    },
+    {
+      "id": "cookies",
+      "label": "Cookies",
+      "sublabel": "cookies.py",
+      "kind": "component",
+      "x": 400, "y": 540,
+      "summary": "RequestsCookieJar: dict-like API over stdlib cookiejar semantics, persisted across a Session.",
+      "detail": "<p><code>RequestsCookieJar</code> merges two worlds: the ergonomic dict-like access users want, and the RFC-compliant domain/path matching of stdlib <code>http.cookiejar</code>. Helper functions extract cookies from each response into the jar and render the <code>Cookie</code> header at prepare time — which is how cookies survive redirects and persist across all requests made through one Session.</p>",
+      "files": [
+        { "path": "src/requests/cookies.py", "url": "https://github.com/psf/requests/blob/main/src/requests/cookies.py" }
+      ]
+    },
+    {
+      "id": "hooks",
+      "label": "Hooks",
+      "sublabel": "hooks.py",
+      "kind": "support",
+      "x": 120, "y": 540,
+      "summary": "A minimal event system — one 'response' event, dispatched over user callbacks.",
+      "detail": "<p>The entire file is ~30 lines. <code>dispatch_hook()</code> runs registered callbacks over each response, letting users observe or even replace responses. Digest authentication is built on this same mechanism, which is a good signal the abstraction is pulling its weight despite its size.</p>",
+      "files": [
+        { "path": "src/requests/hooks.py", "url": "https://github.com/psf/requests/blob/main/src/requests/hooks.py" }
+      ]
+    },
+    {
+      "id": "exceptions",
+      "label": "Exceptions",
+      "sublabel": "exceptions.py",
+      "kind": "support",
+      "x": 980, "y": 540,
+      "summary": "The RequestsException tree: users handle requests' types, never urllib3's.",
+      "detail": "<p>A hierarchy rooted at <code>RequestException</code>: <code>ConnectionError</code>, <code>Timeout</code> (split into connect/read), <code>HTTPError</code>, <code>TooManyRedirects</code>, and friends. Adapters translate urllib3's exceptions into these, so calling code depends only on requests' error surface — a deliberate insulation layer around the external engine.</p>",
+      "files": [
+        { "path": "src/requests/exceptions.py", "url": "https://github.com/psf/requests/blob/main/src/requests/exceptions.py" }
+      ]
+    },
+    {
+      "id": "utils",
+      "label": "Utilities",
+      "sublabel": "utils.py · structures.py · compat.py",
+      "kind": "support",
+      "x": 60, "y": 80,
+      "summary": "Shared helpers: URL requoting, proxy env detection, encoding guesses, CaseInsensitiveDict.",
+      "detail": "<p>The grab-bag every module leans on: URL requoting and validation, proxy environment detection (<code>get_environ_proxies</code>), header parsing, content-encoding guessing, and <code>CaseInsensitiveDict</code> (in <code>structures.py</code>) which backs all header handling. <code>compat.py</code> is a remnant of the Python 2/3 era, kept thin.</p>",
+      "files": [
+        { "path": "src/requests/utils.py", "url": "https://github.com/psf/requests/blob/main/src/requests/utils.py" },
+        { "path": "src/requests/structures.py", "url": "https://github.com/psf/requests/blob/main/src/requests/structures.py" },
+        { "path": "src/requests/compat.py", "url": "https://github.com/psf/requests/blob/main/src/requests/compat.py" }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "api-sessions",
+      "source": "api", "target": "sessions",
+      "label": "one-shot Session",
+      "summary": "Every module-level call creates a throwaway Session.",
+      "detail": "<p><code>requests.request()</code> opens <code>with sessions.Session() as session:</code> and delegates immediately. This keeps the one-liner API stateless — at the cost of a new connection pool per call.</p>"
+    },
+    {
+      "id": "sessions-models",
+      "source": "sessions", "target": "models",
+      "label": "prepare_request()",
+      "curve": -30,
+      "summary": "The Session turns a user Request into a fully-baked PreparedRequest.",
+      "detail": "<p><code>Session.prepare_request()</code> merges session defaults (headers, auth, cookies, params) with per-call arguments, then calls <code>PreparedRequest.prepare()</code> — which encodes the URL, body, and headers into the exact bytes that will go on the wire.</p>"
+    },
+    {
+      "id": "models-auth",
+      "source": "models", "target": "auth",
+      "label": "prepare_auth()",
+      "summary": "Auth callables mutate the PreparedRequest during preparation.",
+      "detail": "<p><code>PreparedRequest.prepare_auth()</code> invokes the auth object as a callable, letting it attach Authorization headers (Basic) or register hooks for challenge-response flows (Digest).</p>"
+    },
+    {
+      "id": "models-cookies",
+      "source": "models", "target": "cookies",
+      "label": "prepare_cookies()",
+      "curve": 40,
+      "summary": "The Cookie header is rendered from the jar at prepare time.",
+      "detail": "<p><code>PreparedRequest.prepare_cookies()</code> uses the cookiejar machinery to compute which cookies match the target URL's domain and path, and renders them into a single <code>Cookie</code> header.</p>"
+    },
+    {
+      "id": "sessions-adapters",
+      "source": "sessions", "target": "adapters",
+      "label": "send(PreparedRequest)",
+      "summary": "Session.send() picks an adapter by URL prefix and dispatches.",
+      "detail": "<p><code>Session.get_adapter()</code> does a longest-prefix match over mounted adapters (by default <code>https://</code> and <code>http://</code> → <code>HTTPAdapter</code>). This indirection is what makes transport behavior pluggable per-Session.</p>"
+    },
+    {
+      "id": "adapters-urllib3",
+      "source": "adapters", "target": "urllib3",
+      "label": "urlopen()",
+      "summary": "The actual network I/O happens inside urllib3's pooled connections.",
+      "detail": "<p><code>HTTPAdapter.send()</code> resolves a connection from its <code>PoolManager</code> and calls <code>urlopen()</code> with the prepared method, URL, headers and body. Timeouts, TLS and low-level retries are all applied here.</p>"
+    },
+    {
+      "id": "adapters-models",
+      "source": "adapters", "target": "models",
+      "label": "build_response()",
+      "curve": -30,
+      "summary": "The raw urllib3 reply is wrapped into a requests Response.",
+      "detail": "<p><code>HTTPAdapter.build_response()</code> copies status, headers, and the raw stream into a <code>Response</code>, decodes cookies into the jar, and links the response back to its originating <code>PreparedRequest</code>.</p>"
+    },
+    {
+      "id": "sessions-cookies",
+      "source": "sessions", "target": "cookies",
+      "label": "persist cookies",
+      "summary": "After each response (and each redirect hop), cookies are extracted into the Session's jar.",
+      "detail": "<p><code>extract_cookies_to_jar()</code> is called in <code>Session.send()</code> and inside the redirect loop, which is how login cookies set on hop 1 are available on hop 2 — and on every later request through the same Session.</p>"
+    },
+    {
+      "id": "sessions-hooks",
+      "source": "sessions", "target": "hooks",
+      "label": "dispatch_hook('response')",
+      "summary": "User callbacks run over every response before it is returned.",
+      "detail": "<p>After a response is built, <code>Session.send()</code> calls <code>dispatch_hook()</code>. A hook may inspect the response or return a replacement — digest auth uses exactly this to transparently retry after a 401 challenge.</p>"
+    },
+    {
+      "id": "adapters-exceptions",
+      "source": "adapters", "target": "exceptions",
+      "label": "translate errors",
+      "summary": "urllib3 exceptions are converted into requests' own exception tree.",
+      "detail": "<p><code>HTTPAdapter.send()</code> catches urllib3's <code>MaxRetryError</code>, <code>ConnectTimeoutError</code>, <code>SSLError</code> etc. and re-raises them as <code>requests.exceptions.*</code> — so user code never needs to import urllib3 to handle failures.</p>"
+    },
+    {
+      "id": "models-exceptions",
+      "source": "models", "target": "exceptions",
+      "label": "raise_for_status()",
+      "curve": 60,
+      "summary": "4xx/5xx responses raise HTTPError on demand.",
+      "detail": "<p><code>Response.raise_for_status()</code> raises <code>HTTPError</code> for client and server error status codes. It is opt-in — requests never raises on HTTP error status by itself, a deliberate and sometimes-debated design choice.</p>"
+    },
+    {
+      "id": "sessions-utils",
+      "source": "sessions", "target": "utils",
+      "label": "env & URL helpers",
+      "summary": "Proxy environment detection, redirect target resolution, header merging.",
+      "detail": "<p>The Session engine leans on utilities for environment-based proxy configuration (<code>merge_environment_settings</code>), URL requoting during redirects, and <code>CaseInsensitiveDict</code> for all header handling.</p>"
+    }
+  ]
+}
