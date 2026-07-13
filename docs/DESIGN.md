@@ -2,6 +2,11 @@
 
 Captured from the design discussion on 2026-07-05.
 
+> **2026-07-13:** the multi-level (semantic-zoom) design is now fully specified in
+> [`DESIGN-v2.md`](DESIGN-v2.md) — graph.json v2 schema, pipeline stages, viewer v2,
+> validation gates, and the revised milestone plan. This file remains the product-level
+> rationale; where the two disagree on mechanism, DESIGN-v2 wins.
+
 ## What we're building
 
 A tool that analyzes a GitHub repository and produces an **interactive architecture wiki**: a single HTML page showing a panoramic graph of the system. Clicking any node (component) or edge (relationship) opens a detail panel explaining it, with citations linking to the actual source lines on GitHub.

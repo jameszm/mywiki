@@ -11,7 +11,16 @@ A product that analyzes GitHub repositories and generates an **interactive archi
 - Delivery: self-contained `.html` file (viewer JS + graph JSON + pre-generated detail payloads inlined). No backend for the MVP. Deep links via URL hash.
 - MVP path: CLI takes a repo URL → emits one HTML file. First milestone: build the HTML viewer against a hand-written sample `graph.json` before writing the analysis pipeline.
 
-See `docs/DESIGN.md` for the full architecture discussion.
+## Product decisions (locked 2026-07-13)
+
+- **Granularity: function/class level** — every class/function/method gets summarized; methods are full graph nodes (details budget-gated: facts-only panels for private/small symbols).
+- **Delivery: self-contained single HTML** (reconfirmed). "Dynamic" = in-page interactivity, no backend.
+- **Depth: unlimited drill-down** (component → [submodule] → file → class/function → method), realized as on-demand *rendering* of pre-generated, inlined data — never on-demand generation.
+- **Order: pure code graph first (milestone 2b), then GitHub API enrichment (commits/issues/PRs/releases), then web search** — but the external-knowledge schema envelope (provenance, authority, conflicts) ships in the schema now, arrays empty.
+
+See `docs/DESIGN.md` for the v1 architecture discussion and **`docs/DESIGN-v2.md` for the full
+multi-level design** (graph.json v2 schema, pipeline stages, viewer v2, validation gates,
+benchmark, revised milestone plan).
 
 ## Repo layout
 
@@ -21,12 +30,17 @@ See `docs/DESIGN.md` for the full architecture discussion.
   - `requests.graph.json` — hand-written sample graph (milestone 1 artifact; to be replaced by pipeline output).
   - `requests-wiki.html` — built demo output.
 
-## Status (2026-07-06)
+## Status (2026-07-13)
 
 - Milestone 1 done: viewer works (pan/zoom, click → detail panel, neighbor highlighting, search, URL-hash deep links) against the hand-written requests graph. User approved the demo.
 - Milestone 2a done: `tools/analyze.py` extracts ground-truth skeletons (ast-based import graph). Validated on requests: all 12 hand-written edges confirmed by real imports; 65 raw core edges show why LLM aggregation is needed.
-- **Next: milestone 2b — LLM grouping step.** Input: `examples/requests.skeleton.json` + file docs → Claude (structured output) → component hierarchy + aggregated labeled edges → graph.json for the existing viewer. Quality benchmark: match or beat the hand-written `examples/requests.graph.json`.
-- API access: `ANTHROPIC_API_KEY` goes in `~/.bashrc` (user has a key; may not be set up on every machine — verify before running LLM steps). `api.anthropic.com` is NOT intercepted by the SealSuite gateway; direct TLS works.
+- **Design v2 done (2026-07-13):** multi-level schema + pipeline + viewer designed via 3 independent design passes + 2 adversarial reviews; all conflicts resolved in `docs/DESIGN-v2.md`. Estimated pipeline cost for requests: ~$0.80/run.
+- **Next: implement milestone 2b**, in this order (per DESIGN-v2 §9):
+  1. **2b-0** — analyzer amendments (import lines on edges, symbol end_lineno, method lines, per-edge external imports, commit SHA, role-heuristic fix).
+  2. **2b-1** — LLM-free end-to-end: schema v2 + `aggregate.py` + `assemble.py` + `--grouping trivial` → real v2 graph.json from the existing skeleton with zero API calls (viewer fixture + keyless CI path).
+  3. **2b-2** — viewer v2 (in-place expansion, runtime quotient edge lift, search/deep-links across depths).
+  4. **2b-3** — LLM stages (`summarize.py` → `group.py` iterated against `score.py` → details) → benchmark sign-off (≥10/12 edges recovered, mean Jaccard ≥ 0.6, primary edge count ≤ 1.5× components).
+- API access: `ANTHROPIC_API_KEY` goes in `~/.bashrc` (user has a key; may not be set up on every machine — verify before running LLM steps; scripts must preflight + support `--dry-run`). `api.anthropic.com` is NOT intercepted by the SealSuite gateway; direct TLS works.
 
 ## Conventions
 
