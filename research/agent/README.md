@@ -11,7 +11,7 @@
 ## 目录结构
 
 ```
-agent-research/
+research/agent/
 ├── README.md                      # 本文件
 ├── reports/                       # 综合报告（面向决策的最终产出）
 │   └── Agent 发展现状与研发提效.md
