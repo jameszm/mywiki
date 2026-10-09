@@ -206,3 +206,82 @@ DeepSeek-V3/R1 级 MoE 的公开生产/复现数字构成了行业"标尺"：H80
 - InferenceX 仪表盘数据（inferencex.semianalysis.com）不可达，仅有仓库 README 与各引擎博客转述；H100 vs B200 的同口径 $/M token 未获一手数据。
 - 2026 年各家 API 价格（DeepSeek V4、GPT-5.x、Claude）仅有 C 级来源且互相矛盾；"每百万 token 成本 2024→2026 下降幅度"无权威一手统计。
 - H20/L20 上 Qwen3/Kimi/GLM 等非 DeepSeek 模型的公开吞吐数据稀少；昇腾 950 上的端到端服务吞吐未公开。
+
+## KQ5 长上下文与多模态推理的服务问题；Agent 工作负载对推理系统的新要求
+
+### Takeaway
+2026 年的主流线上负载已从"聊天"转为"长上下文、短输出、极高前缀复用、多子 agent"的 agentic 流量（AgentX：中位输入 142K/输出 444，前缀命中 >96%，44% 会话含子 agent；OpenAI 称 2026-06 企业客户中 Codex 产出 64% 的输出 token），推理系统的应对是：分层/分布式 KV 池 + KV 感知/会话感知路由、prefill 侧上下文并行与分块流水、decode 侧 KV 切分（DCP/Helix）、模型侧 KV 压缩（DSA/CSA/FP4 KV/滑窗替放）、以及把编码器/分词/解析等非 GPU 工作移出 GPU 节点。多模态的痛点集中在视觉编码器（EPD 分离、编码器输出缓存）与视频帧解码（GPU JPEG 解码 7×）。
+
+### Cited Findings
+- Agent 负载特征（SemiAnalysis AgentX 公开 trace）：长上下文短输出（中位 142K 输入 / 444 输出）、前缀缓存命中率 >96%、44% 会话含子 agent（中位 4 次子 agent rollout）；vLLM 在 AgentX 上 DeepSeek V4 Pro 130K 总 tok/GPU·s、MiniMax M3 376 tok/s/user；packed KV 布局把 92 个碎片分配合并为 1 个、省 ~10% KV 内存；PCP8 对 32K prompt prefill 2.65×；两阶段容量规划（先分别饱和测 prefill/decode 池再按比例配）。— [vLLM × AgentX](https://vllm.ai/blog/2026-09-08-vllm-agentx)（2026-09-08；A）
+- Codex trace（vLLM×Mooncake）：第 30 轮上下文 ~80K、最长 >180K、每轮新增 ~2,242 token、轮间延迟中位 5.2s/P99 81.4s；缓存池使命中率 1.7%→92.2%。— [vLLM × Mooncake](https://vllm.ai/blog/2026-05-06-mooncake-store)（2026-05-06；A）
+- TRT-LLM agent trace 回放：Coder 类 trace 最优前缀命中率均值 96.5%（中位 ISL 14.4k、OSL 110），研究类 agent 仅 24–48%；提出 jobs/h/user 作业级指标。— [blog27](https://github.com/NVIDIA/TensorRT-LLM/blob/main/docs/source/blogs/tech_blog/blog27_Evaluating_Agentic_Serving_with_Trace_Replay_and_Job_Level_Metrics.md)（2026；A）；Dynamo 观察 Claude Code 会话后续调用命中 85–97% 缓存、团队/swarm 97.2%，42 次调用缓存读 891K vs 写 76K（11.7×）；提出 priority、预期输出长度、投机 prefill、会话元数据与 SGLang 子 agent KV 隔离等逐请求提示。— [Dynamo agentic 优化](https://github.com/ai-dynamo/dynamo/blob/main/docs/fern/pages/blog/2026/agentic-inference-optimizations.mdx)（2026；A）
+- 研究表征：AgentSysBench 发现 10 个 agent 应用中 5 个由非 LLM 组件主导延迟、沙箱工作集峰值 28 GB/会话、组件延迟差 32×；Chutes 一年生产 trace 公开。— [arXiv 2608.15127](https://arxiv.org/abs/2608.15127)、[arXiv 2608.13573](https://arxiv.org/abs/2608.13573)（2026-08；A，摘要）
+- 多轮 KV 复用的工程细节：标准 P/D 只单向搬 KV，第二轮 prefill 会重算上一轮 decode 产生的 KV，`bidirectional_kv_xfer` 让 prefill 回拉 decode 块；推理模型若 chat template 丢弃 thinking 轨迹会导致 KV 与 prompt 不对齐而输出错误（vLLM 尚不检测）。— [vLLM 分离式服务指南](https://vllm.ai/blog/2026-09-29-disaggregated-serving-guide)（A）；位置无关缓存：Irminsul 利用 MLA 的 c_KV 位置无关 + 64 维 k_r 可闭式校正，把 SGLang radix cache 改为内容哈希寻址，解决 agent 轮次间相同内容位移导致的缓存失效（运营方报告 10–16s TTFT 尖峰）。— [arXiv 2605.05696](https://arxiv.org/abs/2605.05696)（2026-05；仅研究；A，摘要）
+- 会话感知路由：vLLM Semantic Router 的 SAAR 在 21,600 轮确定性测试中减少 79.29% 模型切换、估算成本 −78.71%。— [Session-Aware Agentic Routing](https://vllm.ai/blog/2026-06-02-session-aware-agentic-routing)（2026-06-02；A）
+- 长上下文 prefill：SGLang Chunked PP（H20，Qwen3-235B PP8 128K TTFT −81%，支持 1M）；GB300 上 128K prefill 8.6s（动态分块较静态再 −8–17%）；vLLM 在 B300 上用 512 token 的长 prefill 调度阈值让短轮次插批。— [Chunked PP](https://lmsys.org/blog/2026-01-15-chunked-pipeline/)、[GB300 long-context](https://lmsys.org/blog/2026-02-19-gb300-longctx/)、[AgentX](https://vllm.ai/blog/2026-09-08-vllm-agentx)（A）
+- 长上下文 decode：DCP（KV 按序列切分）与 Helix（KV 并行 + FFN 重划分）见 KQ2；GLM 5.3 的 Hybrid HiSparse 把稀疏注意力的 KV 热页留 GPU、冷页放 pinned host，使单机 8×H200 跑满 1M 上下文（OpenHands 13 轮 trace：首轮 74,160 token）。— [GLM 5.3 HiSparse](https://vllm.ai/blog/2026-09-08-glm53-part1-hybrid-sparse-offloading)（2026-09-08；A）；DeepSeek V4.1 的 SWA 有界重放让第 21–39 层只对最后 128 token 计算，长 prompt 跳过近一半模型，CUDA graph 下 prefill 计算 −30–40%，Inferact+vLLM 在三周内把 V4.1-Flash 低并发 1.9×、150 TPS 约束下吞吐 5.3×。— [DeepSeek-V4.1-Flash on vLLM](https://vllm.ai/blog/2026-10-07-deepseek-v41-flash)（2026-10-07；A）
+- 多模态：EPD 分离（KQ2）；vLLM 跨编码器输出复用（Encoder 从 Mooncake Store 读取他人算好的图像 embedding，需 MRV2）；SGLang 2026-02 的 Encoder Global Cache Manager（Mooncake 驱动的跨实例 ViT embedding 缓存）；Qwen3-VL 在 MI300X 上 rocJPEG GPU 解码把单张 720p JPEG 从 ~27 ms 降到 ~4 ms（7×），1280×1280 图像 ≈4,800 token，ViT 做 DP 分图；Dynamo 多模态 E/P/D + embedding cache 图像负载 TTFT −30%。— [vLLM cross_encoder_cache 文档](https://github.com/vllm-project/vllm/blob/main/docs/features/cross_encoder_cache.md)、[Mooncake README](https://github.com/kvcache-ai/Mooncake)、[Qwen on MI300X](https://lmsys.org/blog/2026-02-11-Qwen-latency/)、[Dynamo README](https://github.com/ai-dynamo/dynamo)（A）
+- 视频生成/扩散作为新推理负载：TRT-LLM VisualGen 把 Wan 2.2 T2V 从单 B200 扩到 GB200 NVL72 去噪循环 ~53×（端到端 ~41×）；vLLM-Omni 服务 MiniMax-H3 视频模型（8×B300，在线 FP8 省 38.9% HBM）。— [blog25](https://github.com/NVIDIA/TensorRT-LLM/blob/main/docs/source/blogs/tech_blog/blog25_Scaling_Video_Generation_Across_NVL72_Rack_with_TensorRT-LLM.md)、[MiniMax H3 on vLLM-Omni](https://vllm.ai/blog/2026-09-01-minimax-h3-production-serving)（2026；A）
+- 并行采样/RL rollout 对推理的要求：训练-推理逐比特一致（vLLM+TorchTitan，代价 2.4× 慢）；Mooncake 用于 RL 的 rollout 数据传输与权重 P2P 更新（Kimi-K2 1T 权重 53s→7.2s）。— [Bitwise consistent RL](https://github.com/vllm-project/vllm-project.github.io/blob/main/_posts/2025-11-10-bitwise-consistent-train-inference.md)、[Mooncake README](https://github.com/kvcache-ai/Mooncake)（A）
+
+### Inferences
+- "KV 作为服务"（跨实例、跨节点、跨轮次共享）在 agent 时代从锦上添花变为必需品：前缀命中率从 ~40%（2025 聊天）升到 >90%（2026 agent），命中与否直接决定 10× 级 TTFT 差异。
+- 模型侧（KV 压缩、稀疏注意力、prefill 激活更少参数）与系统侧（分层 KV、DCP）正在联合把"1M 上下文"的服务成本压到可商用，但代价是推理引擎需为每个新架构定制 KV 布局与内核（vLLM 为 V4 定制 1,728/8,640/37,440 B 三种块大小）。
+
+### Gaps
+- 多模态（图像/视频输入）在国内推荐/电商场景的公开推理数据极少；视频输入（多帧）的生产级 TTFT/吞吐数字未找到。
+- 长会话场景下 KV 池的容量规划（每用户/每会话 GB 级）与淘汰策略的生产统计仅有 Alibaba 云"KVCache in the wild"摘要（2506.02634）。
+
+## KQ6 对推荐系统推理（长上下文 + 短解码 + 大 beam、多候选打分）的可借鉴与不适配
+
+### Takeaway
+通用 LLM 引擎为"多用户、长解码、动态批、paged KV、OpenAI 接口"而优化，与生成式推荐（SID-GR）的"长用户上下文 + 3–5 步解码 + beam 128–512 + 同请求所有 beam 共享上下文 KV"错配：vLLM 没有稳定的生产 beam search 服务路径（beam search 已移出核心，`LLM.beam_search` 是 generate 之上的离线封装），SGLang 直到 2026-09 才在 v0.5.19 加入 `beam_width`（NVIDIA 2026-05 评估时仍是未合并 PR），TRT-LLM 不暴露该路径的 logprobs 且大 beam 内存压力大。可借鉴的是机制而非引擎：continuous batching、paged/分层 KV、KV 感知路由、CUDA graph、FP8/NVFP4、prefill-only 路径、跨请求用户 KV 复用（MTServe、HSTU KV cache）。NVIDIA recsys-examples 的 SID-GR Inference 就是沿这条路做的专用引擎：ContextKV（共享、稠密）+ BeamKV（逐 beam）+ 专用 beam-decode attention 内核，B=16/hist=2048/beam=200 下比逐步重跑快 49.7×。
+
+### Cited Findings
+- 工作负载定义与引擎错配（NVIDIA 官方判断）："long context + short decode + large beam width"；vLLM 不提供稳定的生产 beam search 服务路径（用户常在业务侧反复调用）；TensorRT-LLM 该路径不原生暴露 logprobs、大 beam 内存压力大、decode attention/后处理内核未为短 SID 解码特化；SGLang 是"当前最可用的开源基线，但大 beam 支持仍在特性 PR 中未合入主干"（截至 2026-05）。— [recsys-examples SID-GR Inference README](https://github.com/NVIDIA/recsys-examples/blob/main/examples/sid-gr-inference/README.md)（2026；开源项目文档声明；A）
+- SID-GR 推理引擎设计：请求级 `ContextKV`（长上下文存一次、稠密连续）+ 短 `BeamKV` + `BeamPath`（父子关系）；批单位是"请求 × 活跃 beam"，按解码步/beam 宽/上下文形状分组；`gr-decode_atten` 内核直接消费 ContextKV+BeamKV+BeamPath（三内核流水：Tensor Core 上下文注意力 split-KV、CUDA core beam 稀疏注意力 topK gather、LSE 合并；SM8x/SM90 融合版），支持 A100/L40/L20、H100/H800/H20、B200/B300、RTX PRO6000；固定形状 decode CUDA graph 绑定稳定池切片，prefill 用 SGLang 式分段 CUDA graph；只算最后一个位置 logits；动态 beam 策略（固定/调度/分数边际）；item 约束生成（trie、mask、受限 topK、目录热更新）；从 vLLM/SGLang 借 continuous batching/paged KV/HTTP/benchmark，从 TRT-LLM 借内核/CUDA graph/算子融合；当前为单机 alpha（Qwen3-1.7B 真实权重）。— 同上及 [gr_decode_atten README](https://github.com/NVIDIA/recsys-examples/blob/main/corelib/gr_decode_atten/README.md)（A）
+- 端到端数字（H100 SXM，8 层/hidden 1024/8 头/4 层级/码本 256/beam 200/bf16，2026-05-26 实测）：`generate_beam_decode()` vs 逐步重跑 `generate()`：B=1/hist=256 1.04×，B=1/hist=2048 1.49×，B=16/hist=256 5.97×，B=16/hist=2048 3.98s→80ms（49.7×）；B=1 时 Python 编排开销主导，"目标是批量离线/热池推理而非单请求在线"。— [SID-GR benchmark RESULTS](https://github.com/NVIDIA/recsys-examples/blob/main/examples/sid_gr/benchmark/RESULTS.md)（A）
+- HSTU 推理（同仓库）：KV cache + CUDA graph 使 batch 1–8 加速 1.3–2.6×；4096 token 序列中 3968 已缓存时 HSTU block 加速 3–20×（无候选）/3–8×（256 候选），B200 CuteDSL 内核下 3.3–7.7×；提供 Triton Inference Server、Torch Export/AOTInductor C++ 推理与可复用 KV cache 管理包。— [HSTU inference benchmark](https://github.com/NVIDIA/recsys-examples/blob/main/examples/hstu/inference/benchmark/README.md)、[CHANGELOG](https://github.com/NVIDIA/recsys-examples/blob/main/CHANGELOG.md)（A）
+- 快手 OneRec（生产）：推理 MFU 28.8%（训练 23.7%），OPEX 为传统多级流水线的 10.6%，承接快手/快手极速版 25% QPS；推理用 NVIDIA L20（4 GPU + 2 CPU/服务器，PCIe，200Gb RoCE），TensorRT 编译 + 自定义插件（cross-attention、MoE）+ batching + MPS 实现 5× 吞吐；RL 中 beam search 优于 top-k/top-p 采样（SID 前缀树结构契合 beam）；系统峰值 QPS >400k、延迟 <500ms；高负载时降级到缓存结果。— [OneRec Technical Report](https://arxiv.org/abs/2506.13695)（2025-06；生产实践并公开数据；A，仓库 PDF 核对）；OneRec-V2：1B 参数、上下文 3000、beam 512，L20 上延迟 36ms、MFU 62%。— [OneRec-V2 Technical Report](https://arxiv.org/abs/2508.20900)（2025-08；A，PDF 核对）；后续"Quantized Inference for OneRec-V2"指出 OneRec-V2 的权重/激活分布更接近 LLM、硬件利用率更高，因而低精度推理可获端到端吞吐收益。— [arXiv 2603.11486](https://arxiv.org/abs/2603.11486)（2026-03；A，摘要）
+- 快手广告 GR4AD：动态 beam 服务（动态 beam 宽度 + 流量感知自适应 beam search），<100ms 延迟、500+ QPS/每张 L20（已在快手广告系统全量部署，服务 4 亿用户）；指出"典型 LLM 服务通常不用 beam search 或只用小 beam"，而 SID 第一层级 beam 为 1、后续层级 beam 很大。— [arXiv 2602.22732](https://arxiv.org/abs/2602.22732)（2026-02；A，PDF 核对）；Multi-Decoder OneRec 用多解码器受限 beam search 做多目标检索。— [arXiv 2607.26500](https://arxiv.org/abs/2607.26500)（2026-07；A，摘要）
+- 美团 MTGR：用户侧表示"对所有候选只推理一次"，推理成本随候选数次线性；MTGR-large 推理成本比 DLRM 降 12%。— MTGR 论文（2025，Meituan；A，PDF 核对，arXiv 编号未核）
+- 用户侧 KV 复用的系统研究：MTServe（GR 的跨请求 KV 复用，host RAM 作后备、异步传输、局部性替换，3.1× 加速、命中率 >98.5%）；HELM（GR 服务中 embedding 热缓存与 KV cache 争 HBM，最优分配比随负载漂移 0.35、PPO 控制器 32 µs 决策、EMB-KV 感知路由）；RelayGR（华为，长序列 GR 的跨阶段接力推理）；Meta 的 HSTU 上下文并行；EARN（LLM 推荐的 register token 压缩，指出"KV 压缩对推荐的短解码加速有限、prompt 压缩会丢历史"）。— [arXiv 2604.22881](https://arxiv.org/abs/2604.22881)、[arXiv 2605.04450](https://arxiv.org/abs/2605.04450)、[arXiv 2601.01712](https://arxiv.org/abs/2601.01712)、[arXiv 2508.04711](https://arxiv.org/abs/2508.04711)、[arXiv 2507.00715](https://arxiv.org/abs/2507.00715)（2025–2026；仅研究；A，摘要）
+- 多候选打分的通用引擎支持：vLLM 提供 `/score`、`/rerank`（Cohere/Jina 兼容）与 pooling 模型 IO Processor 插件；LinkedIn 在 SGLang 上做 LLM 排序，贡献了"prefill-only 服务路径，H100 上 2–3× 吞吐"并开源 fmchisel（2026-03 GTC LinkedIn×SGLang 搜推 meetup，TikTok、Meta 参会分享 LLM 搜索与生成式重排）。— [vLLM online serving 文档](https://github.com/vllm-project/vllm/blob/main/docs/serving/online_serving/README.md)、[vLLM beyond text generation](https://github.com/vllm-project/vllm-project.github.io/blob/main/_posts/2025-09-05-beyond-text-generation.md)、[SGLang GTC 2026](https://lmsys.org/blog/2026-03-25-gtc2026/)（A）；SGLang 仓库 benchmark 目录含 `prefill_only`。— [sgl-project/sglang benchmark](https://github.com/sgl-project/sglang/tree/main/benchmark)（A）
+- vLLM 特性矩阵：beam-search 与投机解码（SD）、pooling 不兼容，与 chunked prefill/APC/LoRA/CUDA graph 兼容；Whisper 等编解码模型的 beam search "极低效"。— [vLLM compatibility matrix](https://github.com/vllm-project/vllm/blob/main/docs/features/README.md)、[speech_to_text 文档](https://github.com/vllm-project/vllm/blob/main/docs/serving/online_serving/speech_to_text.md)（A）
+- 可直接复用的 LLM 侧机制与数字：前缀/会话 KV 复用（HiCache 多轮 TTFT −80%、Mooncake Store 命中 92%）、KV 感知路由（Dynamo TTFT −96%）、FP8 KV（2× 容量零损耗）、CUDA graph 批粒度（高并发 +30–50%）、prefill-only 路径（LinkedIn 2–3×）、编码器分离（多模态候选特征）——均见 KQ2/KQ3/KQ5。
+
+### Inferences
+- 推荐生成式推理的瓶颈结构与 LLM 相反：LLM 是 decode memory-bound、prefill 可摊销；SID-GR 是 prefill（用户长历史）主导、decode 只有 3–5 步但 beam 宽度把每步变成"B×beam 行的小批矩阵乘 + 对共享上下文的注意力"，因此"上下文 KV 存一次、beam 只存增量"的内核设计（recsys-examples）与 MTServe 式跨请求用户 KV 复用是关键，而 LLM 引擎的 paged KV（按 token 块、逐序列）会把 beam 展开为 B×beam 个独立序列，内存与注意力计算都浪费。
+- 多候选打分（判别式/重排）更适合走 LLM 引擎的 pooling/score 路径或 prefill-only 服务，收益来自 continuous batching + 前缀共享（用户侧前缀 + 候选后缀），与 LinkedIn 实践一致；但需要引擎支持"一个前缀 + N 个候选"的树形/共享前缀批（vLLM 的 APC 块粒度 16 token 可部分实现）。
+- 投机解码对 SID 解码无意义（3–5 步、强约束词表），结构化约束（trie/mask）才是对应物；FP8/NVFP4、CUDA graph、KV 感知路由、分层 KV 池、PD 分离思想（把用户长历史 prefill 与 beam 解码放不同 GPU 池）均可借鉴。
+
+### Gaps
+- SGLang v0.5.19 的 `beam_width` 实现细节（是否共享上下文 KV、最大 beam、与 radix cache 关系）仅见 Releases 页摘要（B），未核实源码。
+- 未找到 TikTok/字节跳动公开的生成式推荐推理引擎材料；字节在推荐侧公开的是训练/排序模型论文（TokenMixer-Large、UG-Separation 等，见 arXiv 镜像列表），未见推理系统细节。
+- NVIDIA SID-GR Inference 尚无多机/生产规模数据，也无与 OneRec 类生产系统的横向对比。
+
+## KQ7 未来 12 个月（2026-10 → 2027-10）的判断
+
+### Takeaway
+推理系统的下一阶段由三股力量驱动：硬件（Vera Rubin NVL72 已进入 InferenceX/MLPerf 预览，TRT-LLM 1.3rc 已含 SM107 内核；昇腾 950 获得 DeepSeek 一等公民支持）、模型（KV 压缩到每 token <1KB、prefill 激活参数减半、原生 MTP/DSpark 头成为标配、混合线性注意力普及）与负载（agent 流量使前缀命中率 >90%、输入/输出比 >100:1）。预计引擎层继续趋同并被"控制面"（Dynamo/llm-d/AIBrix）吸收，KV 池化与弹性 EP 成为默认，而推荐系统将出现专用的 SID-GR 推理引擎与 LLM 引擎分叉。
+
+### Cited Findings（判断所依据的已发生事实）
+- 硬件路线：InferenceX 已将 Vera Rubin NVL72 列为官方支持并"即将"支持 Rubin NVL8、MI455 UALoE72 及多家未具名厂商芯片；MLPerf v6.1 预览 Rubin NVL72 比 GB300 高至 2.5×（B）；TRT-LLM 1.3.0rc26（2026-09）加入 Rubin SM107 GEMM/MoE/CuTe DSL（B）。— [InferenceX README](https://github.com/SemiAnalysisAI/InferenceX)（A）、[TensorRT-LLM Releases](https://github.com/NVIDIA/TensorRT-LLM/releases)（B）、MLPerf 搜索摘要（C）
+- 国产硬件路线：DeepSeek 2026-09-30 同步开源昇腾 950 推理内核并在 FlashMLA 主线移除 Hopper 支持（面向 V4.1 及后续）；vLLM-Ascend 每 1–3 个月跟随上游发版；Mooncake/Triton-distributed 提供昇腾 RDMA 支持。— [FlashMLA](https://github.com/deepseek-ai/FlashMLA)、[vllm-ascend](https://github.com/vllm-project/vllm-ascend)、[Triton-distributed](https://github.com/ByteDance-Seed/Triton-distributed)（A）
+- 模型路线：DeepSeek V4（CSA/HCA 压缩、1M 上下文、8.7× KV 缩减）→ V4.1-Flash（CED 架构、890 B/token KV、FP4 KV）；Qwen3.5/3.8、Kimi K3、MiniMax M3、GLM-5.x 均为混合/稀疏注意力 + 原生投机头；vLLM 每 2 周发版以跟进 day-0 支持。— [DeepSeek V4 in vLLM](https://vllm.ai/blog/2026-04-24-deepseek-v4)、[V4.1-Flash](https://vllm.ai/blog/2026-10-07-deepseek-v41-flash)、[Qwen3.8 PD](https://vllm.ai/blog/2026-09-21-qwen38-pd-serving)、PyPI 发布记录（A）
+- 引擎路线：vLLM MRV2 默认化并计划 v0.32 删除 MRV1（B）；SGLang Rust 化前端、PD 角色在线切换、Elastic EP（B/A）；Dynamo KVBM 弃用、转向 Router 分层 KV 索引 + Mooncake/FlexKV（B/A）；vLLM 正式发布 GPU-less 前端与 AFD 插件并把"KV 透传的异构 decode 引擎（TileRT）"纳入生态。— [vLLM Releases](https://github.com/vllm-project/vllm/releases)（B）、[SGLang Releases](https://github.com/sgl-project/sglang/releases)（B）、[Dynamo Releases](https://github.com/ai-dynamo/dynamo/releases)（B）、[vLLM 分离式服务指南](https://vllm.ai/blog/2026-09-29-disaggregated-serving-guide)（A）
+- 负载路线：AgentX/AA AgentPerf 成为厂商竞赛指标（TRT-LLM blog26 以 AA 的 SLO20/SLO60 并发为目标）；OpenAI 企业客户中 Codex 输出 64%（vLLM 转引）。— [blog26](https://github.com/NVIDIA/TensorRT-LLM/blob/main/docs/source/blogs/tech_blog/blog26_DeepSeek_V4_on_NVIDIA_Blackwell_Model_Specific_and_Agentic_Workload_Optimizations_in_TensorRT-LLM.md)、[vLLM × AgentX](https://vllm.ai/blog/2026-09-08-vllm-agentx)（A）
+- 推荐路线：NVIDIA 把 SID-GR 推理作为独立引擎（2026-05 导入内核，alpha）；快手 OneRec 系列持续发布（V2 量化推理、多解码器 beam search、GR4AD 动态 beam 服务）；SGLang 新增 beam search（B）。— [recsys-examples](https://github.com/NVIDIA/recsys-examples)、[arXiv 2603.11486](https://arxiv.org/abs/2603.11486)、[arXiv 2602.22732](https://arxiv.org/abs/2602.22732)（A）
+
+### Inferences（判断）
+1. **Blackwell Ultra/Rubin 成为前沿 MoE 服务主力，H100/H200 退为中小模型与 prefill 池；国内 H20 与昇腾 950 并行**：按 2026 年 GB300 比 H200 8–25× 的数字，一年内 H200 上的 DeepSeek 级 MoE 服务将在成本上失去竞争力；国内团队的现实选择是 H20（decode）+ 昇腾（DeepSeek/Qwen 系有一等内核）混部。
+2. **"每百万输出 token"自建成本再降 2–3×**：来源是 NVFP4/FP4 KV 普及、模型侧 KV 压缩、DSpark 类并行草稿在低并发的 1.5–2× 以及 Rubin 代际；API 价格将继续跟随（DeepSeek V4 Flash $0.28 量级 → 更低）。
+3. **PD 分离 + 弹性 EP + 分层 KV 池成为默认而非高级选项**：Dynamo/llm-d/SGLang Router 已把 xPyD 运行时重配、角色切换、Elastic EP 做成产品特性；预计 2027 年前 KVBM 式"引擎内卸载"让位于"集群级 KV 存储（Mooncake/FlexKV/3FS）+ 引擎 connector"。
+4. **投机解码范式切换**：自回归草稿（EAGLE-3）→ 并行块草稿 + 置信调度（DFlash/DSpark/P-EAGLE/自适应验证），接受长度 4–6 成为常态；MTP 头随模型一起发布成为开源模型"标配"。
+5. **推理引擎分叉**：通用 LLM 引擎（vLLM/SGLang/TRT-LLM）、视频/扩散（vLLM-Omni、TRT-LLM VisualGen、SGLang-Diffusion）、推荐 SID-GR（recsys-examples 式专用引擎）三条线并行；对推荐团队，最可能的落地路径是"自研/采用专用 beam-decode 引擎 + 借用 LLM 栈的 KV 池、路由与量化基础设施"，而非直接用 vLLM/SGLang 服务大 beam SID 生成。
+6. **风险**：稀疏/混合注意力模型（DSA/CSA/GDN）让"每个新模型都要新 KV 布局与内核"，引擎 day-0 支持的工程成本上升；多轮 KV 一致性（thinking 轨迹丢弃、位置偏移）与多租户 KV 侧信道（arXiv 2608.09225 等）会成为生产事故来源。
+
+### Gaps
+- 以上判断缺少 2026-Q4 之后的任何一手数据；Rubin 的实际吞吐仅有 NVIDIA 预览（C）。
+- 未找到关于"推荐系统 LLM 化推理成本"的行业统计（仅快手 OneRec 的 OPEX 10.6% 一例）。
