@@ -50,6 +50,18 @@ research/training-inference/
 
 无法核实的数字和说法会标注"未核实"。
 
+## 证据状态与复核建议（重要）
+
+本次调研在受限网络环境中完成：arxiv.org、各公司工程博客、NVIDIA/vLLM/SGLang 文档站、Hugging Face 等全部被出口策略屏蔽，只有 GitHub（git clone、raw 文件、网页）、Google Cloud 博客和微软研究院站点可达。调研者采用以下方式取证，并在每条结论上标注了权威度：
+
+- **A 级**：技术报告 PDF 全文（直接从官方 GitHub 仓库克隆，如 DeepSeek-V3/R1/V3.2、Kimi K2、MiniMax-M1、Qwen3、Seed-Thinking 等）、框架与引擎的官方文档源码（Megatron-LM、torchtitan、TorchRec、recsys-examples、vLLM/SGLang/TensorRT-LLM 博客源码仓库）、MLCommons 官方结果仓库的原始日志、本地论文镜像中的推荐系统论文全文。
+- **B 级**：GitHub 上的 arXiv 摘要镜像、第三方复现笔记、GitHub Releases 页摘要。
+- **C 级**：搜索引擎摘要、媒体与分析师报道、财报电话会逐字稿镜像。
+
+凡是 B/C 级来源的数字都标注了"未核实"。主报告中有 13 处此类标注，建议在有完整网络的环境下优先复核：Meta GEM 训练博客的数字、Rubin 规格、各公司 capex、HBM 价格、MLPerf 的媒体解读、MTIA 300 规格、出口管制条款。
+
+笔记里没有覆盖到的内容主要有：任何公司的绝对训练成本或 GPU 小时数、CPU 与 GPU 推理的每千次请求成本、跨请求 KV cache 的生产命中率、生成式推荐 FP8 训练的精度对照表、字节跳动推理引擎层的公开资料（无）。
+
 ## 维护方式
 
 - 新增主题：在 `research_notes/` 下新建笔记，并在主报告中补充对应章节。
