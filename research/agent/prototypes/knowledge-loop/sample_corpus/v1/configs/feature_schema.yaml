@@ -1,0 +1,17 @@
+# 特征注册表: 每个特征 name / dtype / owner / ttl_hours
+features:
+  - name: user_click_cnt_7d     # 用户 7 天点击次数
+    dtype: int
+    owner: ranking-team
+    ttl_hours: 24
+  - name: item_ctr_1d           # 物品 1 天 CTR
+    dtype: float
+    owner: ranking-team
+    ttl_hours: 6
+  - name: author_follow_cnt_30d # 作者 30 天被关注次数
+    dtype: int
+    owner: growth-team
+    ttl_hours: 48
+defaults:
+  missing_value: -1             # 数值型缺失值填充
+  ttl_hours: 24

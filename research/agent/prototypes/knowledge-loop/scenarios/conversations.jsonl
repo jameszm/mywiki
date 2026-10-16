@@ -1,0 +1,38 @@
+{"id": "s01", "user": "alice", "session": "alice-1", "query": "特征取数超时默认是多少毫秒", "feedback": 1, "applied_action": true}
+{"id": "s02", "user": "alice", "session": "alice-1", "query": "特征取数超时后应该重试几次", "feedback": 1}
+{"id": "s03", "user": "bob", "session": "bob-1", "query": "训练任务 OOM 怎么办", "feedback": 1, "task_success": true}
+{"id": "s04", "user": "bob", "session": "bob-1", "query": "loss 变成 nan 怎么处理", "feedback": 1}
+{"id": "s05", "user": "carol", "session": "carol-1", "query": "Kafka 消费组的分区数怎么配置", "feedback": -1}
+{"id": "s06", "user": "carol", "session": "carol-1", "query": "kafka topic 分区数量在哪里配置", "reformulation_of": "s05", "feedback": -1}
+{"id": "s07", "user": "dave", "session": "dave-1", "query": "排序服务怎么回滚", "feedback": 1, "applied_action": true}
+{"id": "s08", "user": "dave", "session": "dave-1", "query": "deployctl rollback 之后要观察多久", "feedback": 1}
+{"id": "s09", "user": "erin", "session": "erin-1", "query": "学习率默认值是多少", "feedback": -1, "correction": "不对，学习率现在已经改成 0.0005 了，10 月起训练默认减半，文档还没更新"}
+{"id": "s10", "user": "erin", "session": "erin-1", "query": "ranking.model.learning_rate 在哪个文件配置", "feedback": 1}
+{"id": "s11", "user": "frank", "session": "frank-1", "query": "模型上线需要哪些审批", "feedback": 1}
+{"id": "s12", "user": "frank", "session": "frank-1", "query": "旧版模型发布流程是怎样的", "feedback": -1, "correction": "其实旧版邮件审批流程已经废弃了，应该按模型上线流程走工单和架构评审"}
+{"id": "s13", "user": "grace", "session": "grace-1", "query": "FeatureFetchTimeout 告警怎么处理", "feedback": 1, "task_success": true}
+{"id": "s14", "user": "grace", "session": "grace-1", "query": "FeatureServer 过载怎么扩容", "feedback": 1}
+{"id": "s15", "user": "alice", "session": "alice-2", "query": "特征穿越怎么避免", "feedback": 1}
+{"id": "s16", "user": "bob", "session": "bob-2", "query": "MissingPartition 错误怎么排查", "feedback": 1, "applied_action": true}
+{"id": "s17", "user": "carol", "session": "carol-2", "query": "GPU 配额怎么申请", "feedback": -1}
+{"id": "s18", "user": "carol", "session": "carol-2", "query": "怎么申请更多 GPU 卡训练", "reformulation_of": "s17", "feedback": -1}
+{"id": "s19", "user": "dave", "session": "dave-2", "query": "p99 延迟超过 50ms 的告警是哪条日志", "feedback": 1}
+{"id": "s20", "user": "erin", "session": "erin-2", "query": "A/B 实验流量比例怎么设置", "feedback": 1}
+{"id": "s21", "user": "erin", "session": "erin-2", "query": "实验要跑多久才能看显著性", "feedback": 1}
+{"id": "s22", "user": "frank", "session": "frank-2", "query": "离线评估的 AUC 门槛", "feedback": 1}
+{"id": "s23", "user": "grace", "session": "grace-2", "query": "ModelLoadError 是什么原因", "feedback": 1, "task_success": true}
+{"id": "s24", "user": "heng", "session": "heng-1", "query": "compile_feature 做了什么校验", "feedback": 1}
+{"id": "s25", "user": "heng", "session": "heng-1", "query": "特征 DSL 怎么定义一个 7 天点击次数特征", "feedback": 1, "applied_action": true}
+{"id": "s26", "user": "heng", "session": "heng-1", "query": "特征命名规范是什么"}
+{"id": "s27", "user": "alice", "session": "alice-2", "query": "serving 的最大 QPS 配置", "feedback": 1}
+{"id": "s28", "user": "bob", "session": "bob-2", "query": "训练任务怎么从 checkpoint 恢复", "feedback": 1, "task_success": true}
+{"id": "s29", "user": "carol", "session": "carol-3", "query": "Flink 任务 checkpoint 失败怎么办", "feedback": -1, "correction": "不对，我问的是 Flink 实时任务的 checkpoint，不是训练任务的 checkpoint，知识库里没有 Flink 的内容"}
+{"id": "s30", "user": "dave", "session": "dave-3", "query": "ScoreOverflow 错误", "feedback": 1}
+{"id": "s31", "user": "frank", "session": "frank-3", "query": "warmup_steps 是什么配置", "feedback": -1}
+{"id": "s32", "user": "frank", "session": "frank-3", "query": "学习率预热步数 warmup 在哪里设置", "reformulation_of": "s31", "feedback": -1}
+{"id": "s33", "user": "grace", "session": "grace-3", "query": "degrade_mode 降级开关怎么打开", "feedback": 1}
+{"id": "s34", "user": "heng", "session": "heng-2", "query": "run_training 函数的参数", "feedback": 1}
+{"id": "s35", "user": "alice", "session": "alice-3", "query": "特征注册需要填哪些字段"}
+{"id": "s36", "user": "bob", "session": "bob-3", "query": "experiment.json 里 min_days 是什么意思", "feedback": 1}
+{"id": "s37", "user": "erin", "session": "erin-3", "query": "RedisConnectionReset 是什么错误", "feedback": -1}
+{"id": "s38", "user": "dave", "session": "dave-3", "query": "灰度发布怎么做", "feedback": -1}

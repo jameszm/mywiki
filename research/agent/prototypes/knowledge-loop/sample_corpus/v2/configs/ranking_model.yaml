@@ -1,0 +1,22 @@
+# 排序模型配置 (ranking-serving 与 training_job 共用)
+ranking:
+  model:
+    name: dnn_v3            # 模型名
+    version: 12             # 当前线上版本
+    learning_rate: 0.0005   # 学习率, 2026-10 起默认减半以稳定训练
+    warmup_steps: 1000      # 新增: 学习率预热步数, 前 1000 步线性升温
+    optimizer: adam
+    layers: [512, 256, 128]
+  training:
+    batch_size: 4096        # 单卡 batch 大小, OOM 时减半
+    epochs: 3
+    checkpoint_dir: /data/ckpt/ranking
+  serving:
+    timeout_ms: 50          # 特征取数 / 打分超时
+    degrade_mode: false     # 紧急降级开关, 开启后使用默认特征值
+    max_qps: 20000          # 单集群容量
+features:
+  - name: user_click_count_7d
+    dtype: int
+  - name: item_ctr_1d
+    dtype: float

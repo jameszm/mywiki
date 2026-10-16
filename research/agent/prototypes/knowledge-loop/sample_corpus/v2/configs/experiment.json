@@ -1,0 +1,10 @@
+{
+  "experiment_id": "exp_rank_dnn_v3",
+  "layer": "ranking_layer",
+  "traffic_ratio": 0.05,
+  "buckets": ["control", "treatment"],
+  "metrics": ["stay_time", "ctr", "finish_rate"],
+  "guardrails": ["report_rate", "latency_p99"],
+  "min_days": 7,
+  "owner": "ranking-team"
+}

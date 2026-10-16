@@ -1,0 +1,52 @@
+{
+  "source_id": "sample_corpus",
+  "root": "/home/user/mywiki/research/agent/prototypes/knowledge-loop/sample_corpus/v2",
+  "added": 5,
+  "updated": 9,
+  "unchanged": 89,
+  "deleted": 3,
+  "items_reindexed": 26,
+  "files_scanned": 16,
+  "files_added": 1,
+  "files_changed": 6,
+  "files_skipped": 9,
+  "files_deleted": 1,
+  "changed_locators": [
+    "code/feature_dsl.py",
+    "code/ranking_config_loader.py",
+    "configs/feature_schema.yaml",
+    "configs/ranking_model.yaml",
+    "docs/特征DSL说明.md",
+    "logs/serving_errors.log"
+  ],
+  "deleted_locators": [
+    "docs/旧版模型发布流程(废弃).md"
+  ],
+  "added_keys": [
+    "fc8ca10a1ad4@1",
+    "7ec4a9d2e922@1",
+    "fd246f3f6c49@1",
+    "6ce0a3b6c746@1",
+    "21b5e1eab18a@1"
+  ],
+  "updated_keys": [
+    "5ea52db78cf1@2",
+    "e52206e1b8f8@2",
+    "8af1aed59fc0@2",
+    "70b16353e9b3@2",
+    "d739e3cff7a5@2",
+    "5a5c27aa925a@2",
+    "ae1eedb8c832@2",
+    "3d816ff36367@2",
+    "8e717f74a93c@2"
+  ],
+  "deleted_keys": [
+    "23dc7c605ab9@1",
+    "e0429f683710@1",
+    "a179a79cf571@1"
+  ],
+  "run_id": 2,
+  "corpus_version": 2,
+  "started_at": "2026-10-16T09:42:28.713179+00:00",
+  "finished_at": "2026-10-16T09:42:28.728058+00:00"
+}

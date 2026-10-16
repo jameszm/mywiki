@@ -1,0 +1,17 @@
+{
+  "turns": 38,
+  "cited_turns": 31,
+  "cited_rate": 0.816,
+  "abstained": 7,
+  "feedback_events": 50,
+  "users": {
+    "alice": 5,
+    "bob": 5,
+    "carol": 5,
+    "dave": 5,
+    "erin": 5,
+    "frank": 5,
+    "grace": 4,
+    "heng": 4
+  }
+}

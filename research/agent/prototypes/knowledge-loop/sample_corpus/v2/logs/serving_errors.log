@@ -1,0 +1,116 @@
+2026-10-01 08:00:00 WARN p99 latency 72ms exceeds 50ms threshold, window=5m
+2026-10-01 08:00:53 WARN p99 latency 84ms exceeds 50ms threshold, window=5m
+2026-10-01 08:01:46 ERROR FeatureFetchTimeout key=user:88467 timeout_ms=50 attempt=1
+2026-10-01 08:02:39 ERROR FeatureFetchTimeout key=user:12591 timeout_ms=50 attempt=1
+2026-10-01 08:03:32 ERROR ScoreOverflow score=6.3e+11 feature=item_ctr_1d item=item_501258
+2026-10-01 08:04:25 WARN p99 latency 61ms exceeds 50ms threshold, window=5m
+2026-10-01 08:05:18 WARN p99 latency 69ms exceeds 50ms threshold, window=5m
+2026-10-01 08:06:11 WARN p99 latency 81ms exceeds 50ms threshold, window=5m
+2026-10-01 08:07:04 ERROR FeatureFetchTimeout key=user:60950 timeout_ms=50 attempt=2
+2026-10-01 08:07:57 WARN degrade_mode enabled by oncall, using default features
+2026-10-01 08:08:50 ERROR ModelLoadError checksum mismatch file=/models/dnn_v3_12.pb expected=523b5c6f49f8 actual=9f5b0c717b1b
+2026-10-01 08:09:43 ERROR FeatureFetchTimeout key=user:20603 timeout_ms=50 attempt=2
+2026-10-01 08:10:36 WARN p99 latency 60ms exceeds 50ms threshold, window=5m
+2026-10-01 08:11:29 ERROR FeatureFetchTimeout key=user:81403 timeout_ms=50 attempt=1
+2026-10-01 08:12:22 ERROR FeatureFetchTimeout key=user:88242 timeout_ms=50 attempt=1
+2026-10-01 08:13:15 ERROR FeatureFetchTimeout key=user:25572 timeout_ms=50 attempt=2
+2026-10-01 08:14:08 WARN p99 latency 52ms exceeds 50ms threshold, window=5m
+2026-10-01 08:15:01 ERROR FeatureFetchTimeout key=user:98938 timeout_ms=50 attempt=2
+2026-10-01 08:15:54 WARN p99 latency 93ms exceeds 50ms threshold, window=5m
+2026-10-01 08:16:47 ERROR ModelLoadError checksum mismatch file=/models/dnn_v3_12.pb expected=8906c6c8b07d actual=6ceb2fd1e837
+2026-10-01 08:17:40 WARN degrade_mode enabled by oncall, using default features
+2026-10-01 08:18:33 ERROR FeatureFetchTimeout key=user:58352 timeout_ms=50 attempt=2
+2026-10-01 08:19:26 ERROR FeatureFetchTimeout key=user:68412 timeout_ms=50 attempt=2
+2026-10-01 08:20:19 WARN degrade_mode enabled by oncall, using default features
+2026-10-01 08:21:12 ERROR FeatureFetchTimeout key=user:83116 timeout_ms=50 attempt=2
+2026-10-01 08:22:05 ERROR ScoreOverflow score=4.4e+11 feature=item_ctr_1d item=item_831660
+2026-10-01 08:22:58 ERROR ScoreOverflow score=3.9e+11 feature=item_ctr_1d item=item_275451
+2026-10-01 08:23:51 ERROR FeatureFetchTimeout key=user:51354 timeout_ms=50 attempt=2
+2026-10-01 08:24:44 ERROR FeatureFetchTimeout key=user:93119 timeout_ms=50 attempt=1
+2026-10-01 08:25:37 ERROR FeatureFetchTimeout key=user:36978 timeout_ms=50 attempt=2
+2026-10-01 08:26:30 ERROR ScoreOverflow score=2.6e+11 feature=item_ctr_1d item=item_861236
+2026-10-01 08:27:23 ERROR ModelLoadError checksum mismatch file=/models/dnn_v3_12.pb expected=06932af58dca actual=d779601569d3
+2026-10-01 08:28:16 WARN p99 latency 84ms exceeds 50ms threshold, window=5m
+2026-10-01 08:29:09 ERROR FeatureFetchTimeout key=user:17914 timeout_ms=50 attempt=1
+2026-10-01 08:30:02 ERROR FeatureFetchTimeout key=user:95940 timeout_ms=50 attempt=2
+2026-10-01 08:30:55 ERROR FeatureFetchTimeout key=user:36886 timeout_ms=50 attempt=2
+2026-10-01 08:31:48 WARN p99 latency 78ms exceeds 50ms threshold, window=5m
+2026-10-01 08:32:41 WARN p99 latency 88ms exceeds 50ms threshold, window=5m
+2026-10-01 08:33:34 ERROR ModelLoadError checksum mismatch file=/models/dnn_v3_12.pb expected=bd6d3b6ec458 actual=4237f61ba588
+2026-10-01 08:34:27 ERROR FeatureFetchTimeout key=user:84332 timeout_ms=50 attempt=2
+2026-10-01 08:35:20 ERROR FeatureFetchTimeout key=user:85645 timeout_ms=50 attempt=2
+2026-10-01 08:36:13 ERROR FeatureFetchTimeout key=user:39961 timeout_ms=50 attempt=1
+2026-10-01 08:37:06 ERROR ScoreOverflow score=2.3e+11 feature=item_ctr_1d item=item_770451
+2026-10-01 08:37:59 WARN p99 latency 80ms exceeds 50ms threshold, window=5m
+2026-10-01 08:38:52 WARN p99 latency 85ms exceeds 50ms threshold, window=5m
+2026-10-01 08:39:45 WARN p99 latency 76ms exceeds 50ms threshold, window=5m
+2026-10-01 08:40:38 ERROR FeatureFetchTimeout key=user:35704 timeout_ms=50 attempt=2
+2026-10-01 08:41:31 WARN p99 latency 61ms exceeds 50ms threshold, window=5m
+2026-10-01 08:42:24 WARN p99 latency 77ms exceeds 50ms threshold, window=5m
+2026-10-01 08:43:17 ERROR ModelLoadError checksum mismatch file=/models/dnn_v3_12.pb expected=0af401dc37a2 actual=b77bfdd9d51a
+2026-10-01 08:44:10 ERROR ModelLoadError checksum mismatch file=/models/dnn_v3_12.pb expected=6f9d16894d44 actual=7274cd6fa63d
+2026-10-01 08:45:03 ERROR FeatureFetchTimeout key=user:82498 timeout_ms=50 attempt=1
+2026-10-01 08:45:56 WARN p99 latency 70ms exceeds 50ms threshold, window=5m
+2026-10-01 08:46:49 ERROR ScoreOverflow score=6.4e+11 feature=item_ctr_1d item=item_761964
+2026-10-01 08:47:42 ERROR FeatureFetchTimeout key=user:42203 timeout_ms=50 attempt=2
+2026-10-01 08:48:35 WARN degrade_mode enabled by oncall, using default features
+2026-10-01 08:49:28 ERROR FeatureFetchTimeout key=user:57748 timeout_ms=50 attempt=2
+2026-10-01 08:50:21 WARN p99 latency 87ms exceeds 50ms threshold, window=5m
+2026-10-01 08:51:14 WARN p99 latency 71ms exceeds 50ms threshold, window=5m
+2026-10-01 08:52:07 ERROR FeatureFetchTimeout key=user:25985 timeout_ms=50 attempt=2
+2026-10-01 08:53:00 ERROR ScoreOverflow score=6.0e+11 feature=item_ctr_1d item=item_697846
+2026-10-01 08:53:53 ERROR FeatureFetchTimeout key=user:14253 timeout_ms=50 attempt=1
+2026-10-01 08:54:46 ERROR ScoreOverflow score=3.9e+11 feature=item_ctr_1d item=item_736374
+2026-10-01 08:55:39 ERROR FeatureFetchTimeout key=user:93933 timeout_ms=50 attempt=1
+2026-10-01 08:56:32 ERROR ScoreOverflow score=1.1e+11 feature=item_ctr_1d item=item_642933
+2026-10-01 08:57:25 WARN p99 latency 52ms exceeds 50ms threshold, window=5m
+2026-10-01 08:58:18 WARN p99 latency 78ms exceeds 50ms threshold, window=5m
+2026-10-01 08:59:11 ERROR FeatureFetchTimeout key=user:84691 timeout_ms=50 attempt=2
+2026-10-01 09:00:04 ERROR FeatureFetchTimeout key=user:32546 timeout_ms=50 attempt=1
+2026-10-01 09:00:57 WARN p99 latency 53ms exceeds 50ms threshold, window=5m
+2026-10-01 09:01:50 ERROR FeatureFetchTimeout key=user:35260 timeout_ms=50 attempt=2
+2026-10-01 09:02:43 ERROR FeatureFetchTimeout key=user:12138 timeout_ms=50 attempt=2
+2026-10-01 09:03:36 WARN degrade_mode enabled by oncall, using default features
+2026-10-01 09:04:29 ERROR FeatureFetchTimeout key=user:18886 timeout_ms=50 attempt=2
+2026-10-01 09:05:22 ERROR FeatureFetchTimeout key=user:78350 timeout_ms=50 attempt=1
+2026-10-01 09:06:15 ERROR FeatureFetchTimeout key=user:79815 timeout_ms=50 attempt=1
+2026-10-01 09:07:08 ERROR FeatureFetchTimeout key=user:88295 timeout_ms=50 attempt=1
+2026-10-01 09:08:01 WARN p99 latency 56ms exceeds 50ms threshold, window=5m
+2026-10-01 09:08:54 ERROR ScoreOverflow score=5.2e+11 feature=item_ctr_1d item=item_860376
+2026-10-01 09:09:47 ERROR ModelLoadError checksum mismatch file=/models/dnn_v3_12.pb expected=fbdc033a5b29 actual=423cc6925369
+2026-10-01 09:10:40 ERROR FeatureFetchTimeout key=user:93417 timeout_ms=50 attempt=2
+2026-10-01 09:11:33 WARN p99 latency 65ms exceeds 50ms threshold, window=5m
+2026-10-01 09:12:26 WARN p99 latency 67ms exceeds 50ms threshold, window=5m
+2026-10-01 09:13:19 ERROR ScoreOverflow score=5.3e+10 feature=item_ctr_1d item=item_682262
+2026-10-01 09:14:12 WARN p99 latency 67ms exceeds 50ms threshold, window=5m
+2026-10-01 09:15:05 ERROR ModelLoadError checksum mismatch file=/models/dnn_v3_12.pb expected=4c66d3981067 actual=e3a0780dfdd6
+2026-10-01 09:15:58 ERROR FeatureFetchTimeout key=user:83162 timeout_ms=50 attempt=2
+2026-10-01 09:16:51 ERROR ModelLoadError checksum mismatch file=/models/dnn_v3_12.pb expected=4ee247181ecc actual=10591a50641a
+2026-10-01 09:17:44 ERROR FeatureFetchTimeout key=user:66135 timeout_ms=50 attempt=2
+2026-10-01 09:18:37 WARN p99 latency 73ms exceeds 50ms threshold, window=5m
+2026-10-01 09:19:30 ERROR ScoreOverflow score=6.7e+11 feature=item_ctr_1d item=item_423964
+2026-10-01 09:20:23 ERROR ModelLoadError checksum mismatch file=/models/dnn_v3_12.pb expected=b076c88325e9 actual=79e450446d94
+2026-10-01 09:21:16 WARN p99 latency 88ms exceeds 50ms threshold, window=5m
+2026-10-01 09:22:09 ERROR ModelLoadError checksum mismatch file=/models/dnn_v3_12.pb expected=daf046b86788 actual=c26f818ae9b7
+2026-10-01 09:23:02 WARN p99 latency 94ms exceeds 50ms threshold, window=5m
+2026-10-01 09:23:55 ERROR FeatureFetchTimeout key=user:31610 timeout_ms=50 attempt=2
+2026-10-01 09:24:48 ERROR FeatureFetchTimeout key=user:29272 timeout_ms=50 attempt=1
+2026-10-01 09:25:41 ERROR ScoreOverflow score=6.7e+10 feature=item_ctr_1d item=item_466045
+2026-10-01 09:26:34 WARN p99 latency 60ms exceeds 50ms threshold, window=5m
+2026-10-01 09:27:27 WARN p99 latency 85ms exceeds 50ms threshold, window=5m
+2026-10-01 09:28:20 ERROR RedisConnectionReset host=10.1.2.8:6379 retry=3 pool=feature-cache
+2026-10-01 09:29:13 ERROR RedisConnectionReset host=10.1.2.8:6379 retry=2 pool=feature-cache
+2026-10-01 09:30:06 ERROR RedisConnectionReset host=10.1.2.7:6379 retry=2 pool=feature-cache
+2026-10-01 09:30:59 ERROR RedisConnectionReset host=10.1.2.4:6379 retry=3 pool=feature-cache
+2026-10-01 09:31:52 ERROR RedisConnectionReset host=10.1.2.8:6379 retry=3 pool=feature-cache
+2026-10-01 09:32:45 ERROR RedisConnectionReset host=10.1.2.8:6379 retry=3 pool=feature-cache
+2026-10-01 09:33:38 ERROR RedisConnectionReset host=10.1.2.4:6379 retry=3 pool=feature-cache
+2026-10-01 09:34:31 ERROR RedisConnectionReset host=10.1.2.3:6379 retry=1 pool=feature-cache
+2026-10-01 09:35:24 ERROR RedisConnectionReset host=10.1.2.7:6379 retry=3 pool=feature-cache
+2026-10-01 09:36:17 ERROR RedisConnectionReset host=10.1.2.5:6379 retry=1 pool=feature-cache
+2026-10-01 09:37:10 ERROR RedisConnectionReset host=10.1.2.3:6379 retry=3 pool=feature-cache
+2026-10-01 09:38:03 ERROR RedisConnectionReset host=10.1.2.8:6379 retry=1 pool=feature-cache
+2026-10-01 09:38:56 ERROR RedisConnectionReset host=10.1.2.5:6379 retry=3 pool=feature-cache
+2026-10-01 09:39:49 ERROR RedisConnectionReset host=10.1.2.6:6379 retry=2 pool=feature-cache
+2026-10-01 09:40:42 ERROR RedisConnectionReset host=10.1.2.7:6379 retry=2 pool=feature-cache
+2026-10-01 09:41:35 ERROR RedisConnectionReset host=10.1.2.5:6379 retry=3 pool=feature-cache
