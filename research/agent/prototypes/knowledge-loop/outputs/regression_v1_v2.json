@@ -3,14 +3,14 @@
   "new": "v2-38-3",
   "common": 22,
   "summary_delta": {
-    "recall@5": 0.0303,
-    "recall@10": 0.0226,
-    "mrr": 0.0053,
-    "ndcg@5": 0.0194,
-    "ndcg@10": 0.0161,
-    "keyword_coverage": 0.004,
-    "citation_precision": -0.0176,
-    "groundedness": 0.0464
+    "recall@5": 0.0227,
+    "recall@10": 0.0,
+    "mrr": 0.0,
+    "ndcg@5": 0.0084,
+    "ndcg@10": -0.0016,
+    "keyword_coverage": 0.0,
+    "citation_precision": 0.0068,
+    "groundedness": 0.0
   },
   "per_query": [
     {

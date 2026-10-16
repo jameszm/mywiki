@@ -133,7 +133,7 @@ def main() -> int:
     step(6, "同步语料 v2 (增量)")
     rep2 = sync_source(store, SOURCE, ROOT / "sample_corpus" / "v2", index=index)
     say("   " + rep2.summary())
-    say(f"   只重建了受影响条目: 新增 {rep2.added} + 更新 {rep2.updated} + 墓碑 {rep2.deleted} = {rep2.items_reindexed}; 未变 {rep2.unchanged} 条未触碰 (索引大小 {len(index)} = 当前有效条目 {store.count_items()})")
+    say(f"   只重建了受影响条目: 索引操作 {rep2.items_reindexed} 次 = 新增 {rep2.added} + 更新 {rep2.updated}×2 (移除旧版本+加入新版本) + 墓碑 {rep2.deleted}; 未变 {rep2.unchanged} 条未触碰 (索引大小 {len(index)} = 当前有效条目 {store.count_items()})")
     say(f"   变更文件: {', '.join(rep2.changed_locators)}; 删除文件: {', '.join(rep2.deleted_locators)}")
     for key in rep2.updated_keys[:3]:
         item_id, ver = key.split("@")

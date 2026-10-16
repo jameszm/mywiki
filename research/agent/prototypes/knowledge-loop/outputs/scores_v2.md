@@ -51,31 +51,31 @@
 
 ### verify (28)
 - #6 p=0.60 引用后反馈偏负 (helpfulness -0.27), 需人工核对 | items=['5f358bce2018@1'] | evidence={"negative_turns": ["t00029"], "turn_ids": ["t00029"]}
-- #28 p=0.60 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['61fb48f6ec2a@1'] | evidence={"last_verified_at": "2026-10-16T09:42:28.463132+00:00", "locator": "code/ranking_config_loader.py"}
+- #28 p=0.60 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['61fb48f6ec2a@1'] | evidence={"last_verified_at": "2026-10-16T10:20:15.483364+00:00", "locator": "code/ranking_config_loader.py"}
 - #9 p=0.54 被检索 7 次但从未被引用, 可能标题/内容与问题不匹配 | items=['a3499fdac14a@1'] | evidence={"exposures": 7}
-- #30 p=0.50 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['8732966d674b@1'] | evidence={"last_verified_at": "2026-10-16T09:42:28.463132+00:00", "locator": "docs/特征DSL说明.md"}
-- #37 p=0.50 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['fd78b0d4f27c@1'] | evidence={"last_verified_at": "2026-10-16T09:42:28.463132+00:00", "locator": "docs/特征DSL说明.md"}
+- #30 p=0.50 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['8732966d674b@1'] | evidence={"last_verified_at": "2026-10-16T10:20:15.483364+00:00", "locator": "docs/特征DSL说明.md"}
+- #37 p=0.50 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['fd78b0d4f27c@1'] | evidence={"last_verified_at": "2026-10-16T10:20:15.483364+00:00", "locator": "docs/特征DSL说明.md"}
 - #5 p=0.48 被检索 4 次但从未被引用, 可能标题/内容与问题不匹配 | items=['5e7b58ff338c@1'] | evidence={"exposures": 4}
 - #10 p=0.48 被检索 4 次但从未被引用, 可能标题/内容与问题不匹配 | items=['c54a44a2f709@1'] | evidence={"exposures": 4}
 - #11 p=0.48 被检索 4 次但从未被引用, 可能标题/内容与问题不匹配 | items=['ec47ade7d52c@1'] | evidence={"exposures": 4}
 - #7 p=0.46 被检索 3 次但从未被引用, 可能标题/内容与问题不匹配 | items=['7ad05a298991@1'] | evidence={"exposures": 3}
 - #12 p=0.46 被检索 3 次但从未被引用, 可能标题/内容与问题不匹配 | items=['fe268022c43e@1'] | evidence={"exposures": 3}
-- #19 p=0.40 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['34780b8cd181@1'] | evidence={"last_verified_at": "2026-10-16T09:42:28.463132+00:00", "locator": "logs/serving_errors.log"}
-- #22 p=0.40 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['4c0c7cbd3f50@1'] | evidence={"last_verified_at": "2026-10-16T09:42:28.463132+00:00", "locator": "logs/serving_errors.log"}
-- #23 p=0.40 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['4e91515119ed@1'] | evidence={"last_verified_at": "2026-10-16T09:42:28.463132+00:00", "locator": "logs/serving_errors.log"}
-- #26 p=0.40 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['542d74366de2@1'] | evidence={"last_verified_at": "2026-10-16T09:42:28.463132+00:00", "locator": "code/feature_dsl.py"}
-- #27 p=0.40 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['5b7c34784996@1'] | evidence={"last_verified_at": "2026-10-16T09:42:28.463132+00:00", "locator": "logs/serving_errors.log"}
-- #32 p=0.40 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['989fa2631324@1'] | evidence={"last_verified_at": "2026-10-16T09:42:28.463132+00:00", "locator": "code/ranking_config_loader.py"}
-- #33 p=0.40 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['a7b8f9a39f5f@1'] | evidence={"last_verified_at": "2026-10-16T09:42:28.463132+00:00", "locator": "code/feature_dsl.py"}
-- #34 p=0.40 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['b5bbc17daf52@1'] | evidence={"last_verified_at": "2026-10-16T09:42:28.463132+00:00", "locator": "code/feature_dsl.py"}
-- #35 p=0.40 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['e6391e4c3454@1'] | evidence={"last_verified_at": "2026-10-16T09:42:28.463132+00:00", "locator": "logs/serving_errors.log"}
-- #18 p=0.30 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['2550fdfb93cc@1'] | evidence={"last_verified_at": "2026-10-16T09:42:28.463132+00:00", "locator": "docs/特征DSL说明.md"}
-- #20 p=0.30 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['36576196b7e3@1'] | evidence={"last_verified_at": "2026-10-16T09:42:28.463132+00:00", "locator": "configs/feature_schema.yaml"}
-- #21 p=0.30 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['43a14b4bb980@1'] | evidence={"last_verified_at": "2026-10-16T09:42:28.463132+00:00", "locator": "docs/特征DSL说明.md"}
-- #24 p=0.30 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['51e425e8b8eb@1'] | evidence={"last_verified_at": "2026-10-16T09:42:28.463132+00:00", "locator": "code/feature_dsl.py"}
-- #25 p=0.30 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['5214891d2bf2@1'] | evidence={"last_verified_at": "2026-10-16T09:42:28.463132+00:00", "locator": "code/ranking_config_loader.py"}
-- #29 p=0.30 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['67dbfa3ffb82@1'] | evidence={"last_verified_at": "2026-10-16T09:42:28.463132+00:00", "locator": "code/feature_dsl.py"}
-- #31 p=0.30 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['91dc2207713b@1'] | evidence={"last_verified_at": "2026-10-16T09:42:28.463132+00:00", "locator": "code/ranking_config_loader.py"}
-- #36 p=0.30 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['ec47ade7d52c@1'] | evidence={"last_verified_at": "2026-10-16T09:42:28.463132+00:00", "locator": "code/ranking_config_loader.py"}
-- #38 p=0.30 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['fe268022c43e@1'] | evidence={"last_verified_at": "2026-10-16T09:42:28.463132+00:00", "locator": "code/feature_dsl.py"}
+- #19 p=0.40 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['34780b8cd181@1'] | evidence={"last_verified_at": "2026-10-16T10:20:15.483364+00:00", "locator": "logs/serving_errors.log"}
+- #22 p=0.40 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['4c0c7cbd3f50@1'] | evidence={"last_verified_at": "2026-10-16T10:20:15.483364+00:00", "locator": "logs/serving_errors.log"}
+- #23 p=0.40 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['4e91515119ed@1'] | evidence={"last_verified_at": "2026-10-16T10:20:15.483364+00:00", "locator": "logs/serving_errors.log"}
+- #26 p=0.40 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['542d74366de2@1'] | evidence={"last_verified_at": "2026-10-16T10:20:15.483364+00:00", "locator": "code/feature_dsl.py"}
+- #27 p=0.40 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['5b7c34784996@1'] | evidence={"last_verified_at": "2026-10-16T10:20:15.483364+00:00", "locator": "logs/serving_errors.log"}
+- #32 p=0.40 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['989fa2631324@1'] | evidence={"last_verified_at": "2026-10-16T10:20:15.483364+00:00", "locator": "code/ranking_config_loader.py"}
+- #33 p=0.40 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['a7b8f9a39f5f@1'] | evidence={"last_verified_at": "2026-10-16T10:20:15.483364+00:00", "locator": "code/feature_dsl.py"}
+- #34 p=0.40 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['b5bbc17daf52@1'] | evidence={"last_verified_at": "2026-10-16T10:20:15.483364+00:00", "locator": "code/feature_dsl.py"}
+- #35 p=0.40 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['e6391e4c3454@1'] | evidence={"last_verified_at": "2026-10-16T10:20:15.483364+00:00", "locator": "logs/serving_errors.log"}
+- #18 p=0.30 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['2550fdfb93cc@1'] | evidence={"last_verified_at": "2026-10-16T10:20:15.483364+00:00", "locator": "docs/特征DSL说明.md"}
+- #20 p=0.30 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['36576196b7e3@1'] | evidence={"last_verified_at": "2026-10-16T10:20:15.483364+00:00", "locator": "configs/feature_schema.yaml"}
+- #21 p=0.30 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['43a14b4bb980@1'] | evidence={"last_verified_at": "2026-10-16T10:20:15.483364+00:00", "locator": "docs/特征DSL说明.md"}
+- #24 p=0.30 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['51e425e8b8eb@1'] | evidence={"last_verified_at": "2026-10-16T10:20:15.483364+00:00", "locator": "code/feature_dsl.py"}
+- #25 p=0.30 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['5214891d2bf2@1'] | evidence={"last_verified_at": "2026-10-16T10:20:15.483364+00:00", "locator": "code/ranking_config_loader.py"}
+- #29 p=0.30 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['67dbfa3ffb82@1'] | evidence={"last_verified_at": "2026-10-16T10:20:15.483364+00:00", "locator": "code/feature_dsl.py"}
+- #31 p=0.30 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['91dc2207713b@1'] | evidence={"last_verified_at": "2026-10-16T10:20:15.483364+00:00", "locator": "code/ranking_config_loader.py"}
+- #36 p=0.30 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['ec47ade7d52c@1'] | evidence={"last_verified_at": "2026-10-16T10:20:15.483364+00:00", "locator": "code/ranking_config_loader.py"}
+- #38 p=0.30 来源文件在上次核验后已变化, 该章节未变但需复核上下文是否仍一致 | items=['fe268022c43e@1'] | evidence={"last_verified_at": "2026-10-16T10:20:15.483364+00:00", "locator": "code/feature_dsl.py"}
 

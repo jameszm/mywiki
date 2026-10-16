@@ -2,7 +2,7 @@
 
 > 推荐架构团队“系统迭代 AI 助手”的设计验证原型: 异构工程知识接入 → 版本化知识库 → 增量同步 → DeepSearch 式迭代检索与带引用回答 → 全量对话/引用日志 → 基于日志的知识评分与策展 → 检索/答案/新鲜度/回归评测。
 >
-> **只依赖 Python 3.13 标准库**, 无网络、无 API Key 即可完整运行 (`python3 run_demo.py` 约 0.5s, `bash run_tests.sh` 36 个用例)。它是设计方案的参考实现, 不是产品。
+> **只依赖 Python 3.13 标准库**, 无网络、无 API Key 即可完整运行 (`python3 run_demo.py` 约 0.5s, `bash run_tests.sh` 46 个用例)。它是设计方案的参考实现, 不是产品。
 
 ## 1. 目标
 
@@ -59,7 +59,7 @@ flowchart LR
 | 表 | 关键列 | 说明 |
 |---|---|---|
 | `sources` | id, root, last_sync_at, **sync_count** (=语料版本) | 一个 source 对应一个语料根目录, 跨版本同步按 locator 对齐 |
-| `source_files` | (source_id, locator) PK, sha256, mtime, first_seen_at, **last_changed_at**, deleted_at | 文件级指纹, 增量同步跳过未变文件; 陈旧判定用 last_changed_at |
+| `source_files` | (source_id, locator) PK, sha256, mtime, kind, first_seen_at, **last_changed_at**, deleted_at | 文件级指纹, 增量同步跳过未变文件; 陈旧判定用 last_changed_at |
 | `items` | (**id**, **version**) PK, source_id, locator, kind∈{doc,code,config,log,lesson}, title, text, context_header, content_hash, valid_from, **valid_to**, **superseded_by**, metadata(json), acl(json), last_verified_at, heading_path, **status**∈{active,superseded,deleted} | 版本化知识条目; `valid_to IS NULL` 即当前有效; status=deleted 的关闭行即墓碑。索引: (source_id, locator), kind, valid_to |
 | `sync_runs` | source_id, root, started_at, added, updated, unchanged, deleted, items_reindexed, details(json) | 每次同步的报告 |
 | `turns` | id, session_id, user_id, query, answer, created_at, max_score, abstained, trace(json), metadata(json) | 一轮对话; trace 为 DeepSearch 轨迹 |
@@ -75,24 +75,25 @@ flowchart LR
 ## 4. 核心算法
 
 ### 4.1 接入 (`kloop/connectors/`)
-- `markdown_docs`: 按标题层级切章节 (忽略代码块内的 `#`), 支持 front matter `acl:`; 超长章节按段落切块 (`#1/#2` 进入 heading_path)。
+- `markdown_docs`: 按标题层级切章节 (忽略代码块内的 `#`), 支持 front matter `acl:`; 超长章节按段落切块 (`#1/#2` 进入 heading_path); 同一文件内重复的 heading_path (两个同名章节) 自动加 `(2)`/`(3)` 后缀, 稳定 id 不碰撞。
 - `python_code`: `ast` 解析, 产出模块 docstring (+ 顶层名与常量)、类 (签名 + docstring + 方法列表)、函数/方法 (装饰器 + 签名 + docstring + 前 12 行函数体摘录)。
 - `config_files`: JSON 用 `json`; YAML 用自写子集解析器 (映射/列表/标量/行内列表/引号/注释, 无 PyYAML)。每个顶层 section 一条, 文本为 `key.path = value  # 注释`, `metadata.kv` 保存扁平键值对供冲突检测。
 - `log_files`: Drain 风格模板挖掘: 解析时间戳/级别 → 屏蔽 `<TS> <DATE> <IP> <HEX> <PATH> <ID> <NUM>` → 按 (级别, token 数) 分桶 → 与桶内模板按位置相似度 ≥ 0.6 合并 (差异位写 `<*>`)。每模板一条: 次数/首末次出现/3 条样例/级别/关键词; 按关键词重叠把模板关联到 runbook 章节 (`metadata.related_docs`)。
 
 ### 4.2 增量同步 (`kloop/sync.py`)
 ```
+语料目录不存在 → 直接报错 (否则会把该 source 的全部条目写成墓碑)
 扫描全部文件 → 对每个 locator 比较 sha256 (source_files)
   未变  → 整个文件跳过 (不抽取、不重建索引), 其条目计 unchanged
   变化/新增 → 抽取草稿, 按稳定 id 与当前版本对比 content_hash:
-      相同   → unchanged
+      相同   → unchanged (acl、日志 related_docs 等元数据就地更新, 不产生新版本)
       不同   → 新版本 version+1; 旧版本 valid_to=now, superseded_by=id@new, status=superseded
       新 id  → 插入 (若曾有墓碑则版本号继续递增)
       消失   → 旧版本 valid_to=now, status=deleted (墓碑)
 扫描不到的 locator → 其全部当前条目写墓碑, source_files.deleted_at
-记录 sync_run; 若传入 Index: remove(旧键) + add(新条目) —— items_reindexed = 新增 + 更新 + 墓碑
+记录 sync_run; 若传入 Index: remove(旧键) + add(新条目) —— items_reindexed = 索引 remove/add 操作数 = 新增 + 2×更新 (移除旧版本 + 加入新版本) + 墓碑
 ```
-演示中 v1→v2: 16 个文件只有 6 个变化 + 1 新增 + 1 删除, 103 个当前条目里只重建了 26 个 (新增 5 / 更新 9 / 墓碑 3), 89 个未触碰。
+演示中 v1→v2: 16 个文件只有 6 个变化 + 1 新增 + 1 删除; 条目新增 5 / 更新 9 / 墓碑 3 (索引 remove/add 共 26 次), 89 个条目未触碰, 同步后当前有效 103 条。
 
 ### 4.3 索引 (`kloop/index.py`)
 - 分词: 英文/标识符 (保留整体 + `snake_case`/`CamelCase`/`key.path` 子词) + 中文二元组 (剔除停用字/停用二元组), 无需分词器。
@@ -133,9 +134,9 @@ SearchTrace 记录每步 query / 命中键 / 新证据数 / coverage / 扩展词
 - **helpfulness** (反馈份额): 对话 t 的反馈值 `v_t = clip(显式之和 + 隐式之和, −1.5, 1.5)`; 若 t 引用了 n 条, 第 p 位的权重 `w_p = (1/p)/Σ_{j≤n}(1/j)`; `helpfulness(i) = mean_{t 引用 i} w_{pos(i,t)}·v_t`。
 - **staleness_flags**: `superseded` / `tombstoned` (该版本已被替代/删除但日志里仍有它), `file_changed_since_verified` (来源文件 `last_changed_at` > 条目 `last_verified_at`, 即文件变了但该章节未变)。
 - **conflict_flags**: `near_duplicate` (当前条目两两 3-token shingle Jaccard ≥ 0.6, 不同 locator 且归一化文本不同, 用倒排 shingle 剪枝); `value_mismatch` (文档中“`key.path` 默认 X”的陈述与配置取值不一致; 或不同配置文件同一 key-path 取值不同)。
-- **gap**: 弃答 / `max_score` < 0.2 / 负反馈且无引用 的对话 → 按共享英文标识符或 ≥2 个共享非泛化中文词聚类 (并查集) → 缺口簇 (优先级 = 0.4 + 0.1·对话数 + 0.2·有负反馈)。
+- **gap**: 弃答 / `max_score` < 0.2 / 负反馈且无引用 的对话 → 按共享英文标识符或 ≥2 个共享非泛化中文词聚类 (并查集) → 缺口簇 (优先级 = 0.4 + 0.1·对话数 + 0.2·有负反馈; 标签取簇内频次最高的标识符, 同频按字典序, 保证跨进程确定)。
 - **health** = `0.4·helpful + 0.3·freshness + 0.2·consistency + 0.1·usage`, 其中 `helpful = (clip(helpfulness,−1,1)+1)/2` (无反馈 0.5; 曝光≥3 但从未被引用 0.45), `freshness ∈ {1, 0.5 (file_changed), 0 (superseded/tombstoned)}`, `consistency = max(0, 1 − 0.5·冲突数)`, `usage = min(1, citations/3)`。`components` 与 `reasons` 解释每一项。
-- **策展任务** (fingerprint 去重; 重算时不再成立的任务自动 `resolved`):
+- **策展任务** (fingerprint 去重; 重算时仍成立的 open 任务刷新优先级/理由/证据, 不再成立的自动 `resolved`, 再次成立时重开):
 
 | 类型 | 触发条件 | 优先级 |
 |---|---|---|
@@ -147,11 +148,11 @@ SearchTrace 记录每步 query / 命中键 / 新证据数 / coverage / 扩展词
 | promote_candidate | 用户纠错抽取的候选经验 (由 feedback 产生) | 0.8 |
 
 ### 4.8 评测 (`kloop/evaluate.py`)
-- 黄金集 `golden/golden_set.jsonl`: `{id, query, relevant_locators, relevant_keywords, kind, expects_version, notes[, valid_until_version]}`; `relevant_locators=[]` 表示期望弃答; `expects_version=2` 是新鲜度条目; `valid_until_version=1` 表示该条期望在 v2 失效 (如“学习率默认 0.001”)。
+- 黄金集 `golden/golden_set.jsonl`: `{id, query, relevant_locators, relevant_keywords, kind, expects_version, notes[, valid_until_version]}` (缺失或 null 的字段按默认值处理); `relevant_locators=[]` 表示期望弃答; `expects_version=2` 是新鲜度条目; `valid_until_version=1` 表示该条期望在 v2 失效 (如“学习率默认 0.001”), 新鲜度子集同样遵守。
 - 检索: `recall@k` (命中的相关 locator / 相关 locator 数), `MRR`, `nDCG@k` (locator 首次出现位置计 binary 增益, IDCG 按相关数), k=5,10。
-- 答案: `keyword_coverage` (关键词在答案中出现的比例), `citation_precision` (引用中 locator 相关的比例), `groundedness` (答案句子与某引用条目 token 重叠 ≥ 0.5 的比例), `abstain_ok` (弃答与期望一致)。
-- 新鲜度 (expects_version ≥ 2): `top_hit_current` (top 命中是该 id 的最新版本且当前有效) ∧ `no_superseded_cited` (引用的每个 (id, version) 都 `valid_to IS NULL`) → `freshness_pass`。
-- 回归: `compare_runs(base, new)` 对共同 query 逐项求差, |Δ| > 0.1 标为回归/改进。
+- 答案: `keyword_coverage` (关键词在答案中出现的比例), `citation_precision` (引用中 locator 相关的比例), `groundedness` (答案句子与某引用条目 token 重叠 ≥ 0.5 的比例; 弃答没有断言句, 记 1.0), `abstain_ok` (弃答与期望一致)。
+- 新鲜度 (expects_version ≥ 2): `top_hit_current` (以存储为准: top 命中是该 id 的最新版本且 `valid_to IS NULL`, 索引副本的状态不作数) ∧ `no_superseded_cited` (引用的每个 (id, version) 都 `valid_to IS NULL`) → `freshness_pass`。
+- 回归: `compare_runs(base, new)` 只看共同 query: 汇总 Δ = 共同 query 上各指标均值之差 (两次黄金集不同时不混入条目构成的变化); 逐条 recall@10 / MRR / nDCG@10 / 关键词覆盖 任一 Δ < −0.1 标为回归、> +0.1 标为改进。
 - 黄金集挖掘: 显式 +1 且 ≥1 条引用的对话 → `outputs/golden_candidates.jsonl` (不自动合并)。
 
 ## 5. 如何运行
@@ -159,7 +160,7 @@ SearchTrace 记录每步 query / 命中键 / 新证据数 / coverage / 扩展词
 ```bash
 cd research/agent/prototypes/knowledge-loop
 python3 run_demo.py        # 端到端演示, < 1s, 退出码 0, 输出写入 outputs/
-bash run_tests.sh          # python3 -m unittest discover -s tests -v (36 个用例)
+bash run_tests.sh          # python3 -m unittest discover -s tests -v (46 个用例)
 
 # CLI (默认 outputs/kloop.db)
 python3 -m kloop.cli init
@@ -181,12 +182,12 @@ python3 -m kloop.cli report
 |---|---|---|
 | 1 初始化 | 建表 | 12 张表 |
 | 2 同步 v1 | SyncReport: 16 文件 → 101 条目 (doc 38 / code 40 / config 12 / log 11), 全部重建索引 | `outputs/sync_v1.json` |
-| 3 评测 v1 | 26 条 (含 3 条期望弃答): recall@10 0.95, MRR 0.95, nDCG@10 0.89, 关键词覆盖 0.96, 引用精度 0.75, groundedness 0.89, abstain_ok 1.00 | `outputs/eval_v1.md` 逐条表 |
+| 3 评测 v1 | 26 条 (含 3 条期望弃答): recall@10 0.95, MRR 0.95, nDCG@10 0.89, 关键词覆盖 0.96, 引用精度 0.75, groundedness 1.00, abstain_ok 1.00 | `outputs/eval_v1.md` 逐条表 |
 | 4 回放对话 | 38 轮 / 8 用户; 31 轮带引用 (82%), 7 轮弃答 (Kafka/GPU/warmup/Redis 等语料没有的内容); 50 条反馈 (3 次改写, 3 条纠错); retrievals=330, citations=131 —— 每轮都有精确到版本的检索/引用记录 | `outputs/replay_summary.json` |
 | 5 评分 | Top-5 为被引用且正反馈的条目 (在线取数、OOM 处理…); Bottom-5 为反馈偏负或多次曝光未引用的代码条目; 缺口簇 gpu / kafka / warmup / connection; 冲突 1 (废弃文档与上线流程近重复, Jaccard 0.615); 队列: deprecate 1, fill_gap 4, merge 1, promote_candidate 3, verify 8 | `outputs/scores_v1.md` |
-| 6 同步 v2 | 只重建 26 条 (新增 5 / 更新 9 / 墓碑 3), 89 条跳过; 打印版本链 (v1 `valid_to`/`superseded_by`→v2) 与墓碑示例 | `outputs/sync_v2.json` |
+| 6 同步 v2 | 只有 17 条受影响 (新增 5 / 更新 9 / 墓碑 3, 索引 remove/add 26 次), 89 条跳过; 打印版本链 (v1 `valid_to`/`superseded_by`→v2) 与墓碑示例 | `outputs/sync_v2.json` |
 | 7 新鲜度 | 7 条 expects_version=2 全部通过: top 命中为当前版本、未引用被替代版本、答案含新值 (0.0005 / user_click_count_7d / 灰度五阶段 / RedisConnectionReset 16 次 / warmup_steps 1000 / `_cnt_` 废弃) | `outputs/eval_freshness_v2.md` |
-| 8 全量评测 + 回归 | 29 条; 与步骤 3 共同的 22 条逐项差值 (多为引用精度小幅波动, 无 >0.1 的回归); g04 因 v2 新增代码注释而召回提升 | `outputs/eval_v2.md`, `outputs/regression_v1_v2.md` |
+| 8 全量评测 + 回归 | 29 条; 与步骤 3 共同的 22 条逐项差值, 汇总 Δ 也只按这 22 条算 (recall@5 +0.023, 其余 |Δ| ≤ 0.01, 多为引用精度小幅波动, 无 >0.1 的回归); g04 因 v2 新增代码注释而召回提升 | `outputs/eval_v2.md`, `outputs/regression_v1_v2.md` |
 | 9 再评分 | 陈旧标记从 {} 变为 superseded 9 / tombstoned 3 / file_changed_since_verified 21; 近重复冲突随废弃文档删除而**清除**, SOP 文档“learning_rate 默认 0.001” vs 配置 0.0005 的取值冲突**新出现** (update 任务); 3 个不再成立的任务自动 resolved; 25 条黄金集候选 | `outputs/scores_v2.md`, `outputs/golden_candidates.jsonl` |
 
 时间戳随运行时间变化, 其余数值 (计数、指标、排序) 在同一语料与场景下是确定性的。

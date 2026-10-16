@@ -49,16 +49,18 @@ def load_golden(path: str | Path) -> list[GoldenEntry]:
     for line in Path(path).read_text(encoding="utf-8").splitlines():
         if line.strip():
             d = json.loads(line)
-            out.append(GoldenEntry(d["id"], d["query"], d.get("relevant_locators", []), d.get("relevant_keywords", []),
-                                   d.get("kind", "doc"), int(d.get("expects_version", 1)), d.get("notes", ""),
-                                   d.get("valid_until_version"), d.get("acl")))
+            vu = d.get("valid_until_version")
+            out.append(GoldenEntry(str(d["id"]), d["query"], list(d.get("relevant_locators") or []), list(d.get("relevant_keywords") or []),
+                                   d.get("kind") or "doc", int(d.get("expects_version") or 1), d.get("notes") or "",
+                                   int(vu) if vu is not None else None, d.get("acl")))  # 缺失或 null 的字段一律按默认值处理
     return out
 
 
 def select_entries(entries: list[GoldenEntry], corpus_version: int, freshness_only: bool = False) -> list[GoldenEntry]:
+    valid = [e for e in entries if e.expects_version <= corpus_version and (e.valid_until_version is None or e.valid_until_version >= corpus_version)]
     if freshness_only:
-        return [e for e in entries if 2 <= e.expects_version <= corpus_version]
-    return [e for e in entries if e.expects_version <= corpus_version and (e.valid_until_version is None or e.valid_until_version >= corpus_version)]
+        return [e for e in valid if e.expects_version >= 2]
+    return valid
 
 
 # ----------------------------------------------------------------- metrics
@@ -132,7 +134,7 @@ def evaluate_entry(store: Store, index: Index, entry: GoldenEntry, llm: LLMClien
         "ndcg@5": ndcg_at_k(ranked, rel, 5), "ndcg@10": ndcg_at_k(ranked, rel, 10),
         "keyword_coverage": keyword_coverage(ans.text, entry.relevant_keywords),
         "citation_precision": citation_precision(cited_locs, rel),
-        "groundedness": groundedness(ans.text, [it.text for it in cited_items if it]),
+        "groundedness": 1.0 if ans.abstained else groundedness(ans.text, [it.text for it in cited_items if it]),  # 弃答不作断言, 没有需要落地的句子
         "abstained": ans.abstained, "expected_abstain": entry.expects_abstain, "abstain_ok": ans.abstained == entry.expects_abstain,
         "max_relevance": round(result.max_relevance, 3), "steps": len(result.trace.steps), "stop_reason": result.trace.stop_reason,
         "top_locators": list(dict.fromkeys(ranked[:5])), "cited": [f"{i}@{v}" for i, v in ans.citations],
@@ -140,7 +142,8 @@ def evaluate_entry(store: Store, index: Index, entry: GoldenEntry, llm: LLMClien
     }
     if entry.expects_version >= 2:
         top = result.hits[0].item if result.hits else None
-        rec["top_hit_current"] = bool(top and top.valid_to is None and latest.get(top.id) == top.version)
+        top_db = store.get_item(top.id, top.version) if top else None  # 以存储为准: 索引里的副本可能仍把被替代/墓碑版本当作当前有效
+        rec["top_hit_current"] = bool(top_db and top_db.valid_to is None and latest.get(top.id) == top.version)
         rec["no_superseded_cited"] = all(it is not None and it.valid_to is None for it in cited_items)
         rec["freshness_pass"] = rec["top_hit_current"] and rec["no_superseded_cited"]
     return rec
@@ -183,7 +186,8 @@ def compare_runs(base: EvalRun, new: EvalRun, tol: float = 0.1) -> dict[str, Any
             regressions.append(row)
         elif any(deltas[m] > tol for m in key_metrics):
             improvements.append(row)
-    summary_delta = {m: round(new.summary.get(m, 0) - base.summary.get(m, 0), 4) for m in METRICS}
+    # 汇总差值只在共同 query 上算 (= 逐条差值的均值); 两次 run 的黄金集不同时, 整体 summary 之差会混入条目构成的变化
+    summary_delta = {m: round(mean(r[f"d_{m}"] for r in rows), 4) if rows else 0.0 for m in METRICS}
     return {"base": base.id, "new": new.id, "common": len(rows), "summary_delta": summary_delta, "per_query": rows,
             "regressions": regressions, "improvements": improvements}
 

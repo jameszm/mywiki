@@ -105,5 +105,59 @@ class SyncTests(unittest.TestCase):
         self.assertEqual((cfg_old.version, cfg_new.version), (1, 2))
 
 
+
+class SyncRegressionTests(unittest.TestCase):
+    """回归: 稳定 id 碰撞 / acl 变更被忽略 / 目录不存在时整库墓碑。"""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = write_corpus(Path(self.tmp.name) / "corpus")
+        self.store = Store(":memory:")
+        self.index = Index()
+
+    def tearDown(self):
+        self.store.close()
+        self.tmp.cleanup()
+
+    def test_duplicate_heading_paths_do_not_collide(self):
+        # 同一文件里两个同名章节 (相同 heading_path) 以前会生成相同的稳定 id -> INSERT 主键冲突, 同步中途崩溃
+        doc = "# 文档\n\n## 步骤\n\n第一段内容。\n\n## 其他\n\n其他内容。\n\n## 步骤\n\n第二段内容, 与第一段不同。\n"
+        write_corpus(self.root, extra={"docs/dup.md": doc})
+        rep = sync_source(self.store, "src", self.root, index=self.index, now=T1)
+        items = self.store.current_items_by_locator("src", "docs/dup.md")
+        self.assertEqual(len(items), 3)
+        self.assertEqual(len({it.id for it in items}), 3)
+        self.assertEqual(sorted(it.heading_path for it in items), ["文档 > 其他", "文档 > 步骤", "文档 > 步骤 (2)"])
+        self.assertEqual(len(self.index), rep.added)
+        # 只改第二个同名章节 -> 只有它产生新版本, 第一个保持 v1
+        write_corpus(self.root, extra={"docs/dup.md": doc.replace("第二段内容", "第二段新内容")})
+        rep2 = sync_source(self.store, "src", self.root, index=self.index, now=T2)
+        self.assertEqual((rep2.added, rep2.updated, rep2.deleted), (0, 1, 0))
+        by_path = {it.heading_path: it for it in self.store.current_items_by_locator("src", "docs/dup.md")}
+        self.assertEqual((by_path["文档 > 步骤"].version, by_path["文档 > 步骤 (2)"].version), (1, 2))
+
+    def test_acl_change_without_content_change_is_applied(self):
+        body = "# 内部\n\n## 排查\n\n仅 oncall 可见的排查记录。\n"
+        write_corpus(self.root, extra={"docs/secret.md": body})
+        sync_source(self.store, "src", self.root, index=self.index, now=T1)
+        self.assertEqual([h.item.locator for h in self.index.search("排查记录", acl=["ranking-team"])], ["docs/secret.md"])
+        write_corpus(self.root, extra={"docs/secret.md": "---\nacl: oncall\n---\n" + body})  # 只改 front matter, 正文不变
+        rep = sync_source(self.store, "src", self.root, index=self.index, now=T2)
+        self.assertEqual((rep.added, rep.updated, rep.deleted), (0, 0, 0))  # 不产生新版本
+        item = self.store.current_items_by_locator("src", "docs/secret.md")[0]
+        self.assertEqual((item.version, item.acl), (1, ["oncall"]))
+        self.assertEqual(self.index.items[item.key].acl, ["oncall"])  # 索引中的对象同步更新
+        self.assertEqual([h.item.locator for h in self.index.search("排查记录", acl=["ranking-team"])], [])
+        self.assertEqual([h.item.locator for h in self.index.search("排查记录", acl=["oncall"])], ["docs/secret.md"])
+
+    def test_missing_root_raises_instead_of_tombstoning(self):
+        sync_source(self.store, "src", self.root, index=self.index, now=T1)
+        n = self.store.count_items()
+        with self.assertRaises(FileNotFoundError):
+            sync_source(self.store, "src", Path(self.tmp.name) / "typo", index=self.index, now=T2)
+        self.assertEqual((self.store.count_items(), len(self.index)), (n, n))
+        self.assertEqual(self.store.get_source("src").sync_count, 1)
+
+
 if __name__ == "__main__":
     unittest.main()

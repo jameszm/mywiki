@@ -353,11 +353,11 @@ class Store:
 
     # --------------------------------------------------------------- curation
     def add_curation_task(self, task: CurationTask) -> CurationTask:
-        """按 fingerprint 去重: 已存在 (任意状态) 则返回已有任务, 重开已 resolved 的任务。"""
+        """按 fingerprint 去重: open 任务刷新优先级/理由/证据, resolved 任务重开并刷新, done 任务原样返回。"""
         with self.tx() as c:
             row = c.execute("SELECT * FROM curation_queue WHERE fingerprint=?", (task.fingerprint,)).fetchone()
             if row:
-                if row["status"] == "resolved":
+                if row["status"] in ("open", "resolved"):
                     c.execute("UPDATE curation_queue SET status='open', resolved_at=NULL, priority=?, reason=?, evidence=? WHERE id=?",
                               (task.priority, task.reason, _dumps(task.evidence), row["id"]))
                 task.id = int(row["id"])

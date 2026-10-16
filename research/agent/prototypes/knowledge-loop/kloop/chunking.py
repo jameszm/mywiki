@@ -67,7 +67,13 @@ def make_items(
     版本号与上下文头由 sync 在确定版本后填写 (finalize_item)。
     """
     items: list[KnowledgeItem] = []
+    seen_paths: set[str] = set()
     for heading_path, title, text, meta in sections:
+        base_path, n = heading_path, 2
+        while heading_path in seen_paths:  # 同一文件内重复的 heading_path (如两个同名章节): 加序号后缀, 否则稳定 id 碰撞 -> 主键冲突
+            heading_path = f"{base_path} ({n})"
+            n += 1
+        seen_paths.add(heading_path)
         chunks = split_text(text, max_chars)
         for i, chunk in enumerate(chunks):
             hp = heading_path if len(chunks) == 1 else f"{heading_path} #{i + 1}"

@@ -13,7 +13,7 @@
 == 步骤 3: 黄金集评测 (expects_version=1) ===================================
    条目 26, 弃答 3, 平均步数 1.73
        recall@5 |    recall@10 |          mrr |       ndcg@5 |      ndcg@10 | keyword_coverage | citation_precision | groundedness | abstain_ok_rate
-          0.929 |        0.949 |        0.949 |        0.885 |        0.894 |        0.962 |        0.748 |        0.885 |        1.000
+          0.929 |        0.949 |        0.949 |        0.885 |        0.894 |        0.962 |        0.748 |        1.000 |        1.000
    报告: outputs/eval_v1.json, outputs/eval_v1.md
 
 == 步骤 4: 回放模拟对话 (search -> answer -> 记录对话与反馈) ========================
@@ -54,12 +54,12 @@
 
 == 步骤 6: 同步语料 v2 (增量) ================================================
    文件: 扫描 16 / 新增 1 / 变更 6 / 未变跳过 9 / 删除 1; 条目: 新增 5 / 更新(新版本) 9 / 未变 89 / 墓碑 3; 重建索引条目 26 (语料版本 v2)
-   只重建了受影响条目: 新增 5 + 更新 9 + 墓碑 3 = 26; 未变 89 条未触碰 (索引大小 103 = 当前有效条目 103)
+   只重建了受影响条目: 索引操作 26 次 = 新增 5 + 更新 9×2 (移除旧版本+加入新版本) + 墓碑 3; 未变 89 条未触碰 (索引大小 103 = 当前有效条目 103)
    变更文件: code/feature_dsl.py, code/ranking_config_loader.py, configs/feature_schema.yaml, configs/ranking_model.yaml, docs/特征DSL说明.md, logs/serving_errors.log; 删除文件: docs/旧版模型发布流程(废弃).md
-   版本链 5ea52db78cf1 (feature_dsl 模块): v1 valid_to=2026-10-16T09:42:28 superseded_by=5ea52db78cf1@2 status=superseded -> v2 当前有效
-   版本链 e52206e1b8f8 (feature_dsl.validate_name): v1 valid_to=2026-10-16T09:42:28 superseded_by=e52206e1b8f8@2 status=superseded -> v2 当前有效
-   版本链 8af1aed59fc0 (ranking_config_loader 模块): v1 valid_to=2026-10-16T09:42:28 superseded_by=8af1aed59fc0@2 status=superseded -> v2 当前有效
-   墓碑示例 23dc7c605ab9@1 (旧版模型发布流程 (废弃), docs/旧版模型发布流程(废弃).md): status=deleted valid_to=2026-10-16T09:42:28
+   版本链 5ea52db78cf1 (feature_dsl 模块): v1 valid_to=2026-10-16T10:20:15 superseded_by=5ea52db78cf1@2 status=superseded -> v2 当前有效
+   版本链 e52206e1b8f8 (feature_dsl.validate_name): v1 valid_to=2026-10-16T10:20:15 superseded_by=e52206e1b8f8@2 status=superseded -> v2 当前有效
+   版本链 8af1aed59fc0 (ranking_config_loader 模块): v1 valid_to=2026-10-16T10:20:15 superseded_by=8af1aed59fc0@2 status=superseded -> v2 当前有效
+   墓碑示例 23dc7c605ab9@1 (旧版模型发布流程 (废弃), docs/旧版模型发布流程(废弃).md): status=deleted valid_to=2026-10-16T10:20:15
 
 == 步骤 7: 新鲜度评测 (expects_version=2) ===================================
    条目 7, freshness_pass_rate=1.00, 关键词覆盖 1.00
@@ -81,8 +81,8 @@
 == 步骤 8: v2 全量评测 + 与步骤 3 的回归对比 =======================================
    条目 29 (含 7 条新鲜度条目)
        recall@5 |    recall@10 |          mrr |       ndcg@5 |      ndcg@10 | keyword_coverage | citation_precision | groundedness | abstain_ok_rate
-          0.960 |        0.971 |        0.954 |        0.905 |        0.910 |        0.966 |        0.731 |        0.931 |        1.000
-   回归对比 (共同 query 22): recall@5 +0.030, recall@10 +0.023, mrr +0.005, ndcg@5 +0.019, ndcg@10 +0.016, keyword_coverage +0.004, citation_precision -0.018, groundedness +0.046
+          0.960 |        0.971 |        0.954 |        0.905 |        0.910 |        0.966 |        0.731 |        1.000 |        1.000
+   回归对比 (共同 query 22): recall@5 +0.023, recall@10 +0.000, mrr +0.000, ndcg@5 +0.008, ndcg@10 -0.002, keyword_coverage +0.000, citation_precision +0.007, groundedness +0.000
    回归 0 条, 改进 0 条; 逐条非零差值:
      g04 训练任务 OOM 怎么办: recall@5 +0.50, ndcg@5 +0.26, ndcg@10 +0.05
      g06 loss 变成 nan 怎么处理: ndcg@5 -0.08, ndcg@10 -0.08, citation_precision +0.25

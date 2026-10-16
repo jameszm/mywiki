@@ -1,3 +1,6 @@
+import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -124,6 +127,41 @@ class GapAndTaskTests(unittest.TestCase):
         rep3 = compute_scores(store, now=T2)
         self.assertEqual(rep3.resolved_tasks, 1)  # gpu 缺口不再成立 -> resolved
         self.assertEqual(len(store.curation_tasks("resolved")), 1)
+
+
+
+class ScoringRegressionTests(unittest.TestCase):
+    """回归: 缺口标签不确定 (hash 随机化) / open 任务重算后证据与优先级不刷新。"""
+
+    def test_gap_label_is_deterministic_across_hash_seeds(self):
+        snippet = (
+            "from kloop.store import Store\nfrom kloop.models import ConversationTurn\nfrom kloop.scoring import compute_scores\n"
+            "s = Store(':memory:')\n"
+            "s.log_turn(ConversationTurn('t1', 's', 'u', 'RedisConnectionReset 是什么错误', 'a', '2026-01-01T00:00:00', max_score=0.0, abstained=True), [], [])\n"
+            "r = compute_scores(s, now='2026-01-02T00:00:00')\nprint(r.gaps[0].key, r.tasks[0].fingerprint)\n"
+        )
+        outs = set()
+        for seed in ("1", "2", "3"):
+            env = {**os.environ, "PYTHONHASHSEED": seed, "PYTHONPATH": str(Path(__file__).resolve().parent.parent)}
+            outs.add(subprocess.run([sys.executable, "-c", snippet], env=env, capture_output=True, text=True, check=True).stdout.strip())
+        self.assertEqual(outs, {"connection fill_gap::connection"})  # 同频标识符按字典序取第一个, 与 set 迭代顺序无关
+
+    def test_open_task_refreshed_on_recompute(self):
+        store = Store(":memory:")
+        store.insert_item(mk("A", "A 内容 " * 10))
+        for t in ("t1", "t2", "t3"):
+            log(store, t, "q", ["A@1"], [])
+        rep = compute_scores(store, now=T1)
+        task = next(t for t in rep.tasks if t.task_type == "verify")
+        self.assertEqual((task.priority, task.evidence["exposures"]), (0.46, 3))
+        for t in ("t4", "t5", "t6", "t7"):
+            log(store, t, "q", ["A@1"], [])
+        rep2 = compute_scores(store, now=T2)
+        task2 = next(t for t in rep2.tasks if t.task_type == "verify")
+        self.assertEqual(task2.id, task.id)  # 同一 fingerprint, 不产生重复任务
+        self.assertEqual((task2.priority, task2.evidence["exposures"]), (0.54, 7))
+        self.assertIn("被检索 7 次", task2.reason)
+        self.assertEqual(len(store.curation_tasks("open")), 1)
 
 
 if __name__ == "__main__":

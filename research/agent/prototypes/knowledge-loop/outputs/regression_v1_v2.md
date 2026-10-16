@@ -4,14 +4,14 @@
 
 | 指标 | Δ |
 |---|---|
-| recall@5 | +0.030 |
-| recall@10 | +0.023 |
-| mrr | +0.005 |
-| ndcg@5 | +0.019 |
-| ndcg@10 | +0.016 |
-| keyword_coverage | +0.004 |
-| citation_precision | -0.018 |
-| groundedness | +0.046 |
+| recall@5 | +0.023 |
+| recall@10 | +0.000 |
+| mrr | +0.000 |
+| ndcg@5 | +0.008 |
+| ndcg@10 | -0.002 |
+| keyword_coverage | +0.000 |
+| citation_precision | +0.007 |
+| groundedness | +0.000 |
 
 ## 逐条差值
 

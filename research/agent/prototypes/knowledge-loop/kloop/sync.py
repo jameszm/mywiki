@@ -58,6 +58,8 @@ def sync_source(store: Store, source_id: str, root: str | Path, index: Index | N
                 connectors: list[Connector] | None = None, now: str | None = None) -> SyncReport:
     now = now or utc_now()
     root = Path(root)
+    if not root.is_dir():  # 路径不存在时直接报错; 否则 "扫描不到任何文件" 会把该 source 的全部条目写成墓碑
+        raise FileNotFoundError(f"语料目录不存在: {root}")
     source = store.get_source(source_id) or Source(id=source_id, root=str(root), created_at=now)
     report = SyncReport(source_id=source_id, root=str(root), started_at=now)
     known = store.source_files(source_id)
@@ -105,6 +107,10 @@ def sync_source(store: Store, source_id: str, root: str | Path, index: Index | N
                 report.unchanged += 1
                 if d.kind == "log" and d.metadata.get("related_docs") != cur.metadata.get("related_docs"):
                     store.update_item_fields(cur.id, cur.version, metadata={**cur.metadata, "related_docs": d.metadata.get("related_docs", [])})
+                if list(d.acl) != list(cur.acl):  # 内容未变但 acl 变了 (如 front matter): 就地更新, 不产生新版本; 索引中的对象同步更新
+                    store.update_item_fields(cur.id, cur.version, acl=list(d.acl))
+                    if index is not None and cur.key in index.items:
+                        index.items[cur.key].acl = list(d.acl)
             else:
                 finalize_item(d, cur.version + 1, now)
                 store.close_item(cur.id, cur.version, now, d.key, "superseded")

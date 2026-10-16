@@ -8,7 +8,7 @@
 - conflict: near_duplicate (3-token shingle Jaccard >= 0.6 且归一化文本不同, 不同 locator);
   value_mismatch (文档中出现的 key.path 取值与配置不一致, 或不同配置文件同一 key-path 取值不同)。
 - gap: max_score 低于阈值 / 弃答 / 负反馈且无引用 的对话, 按共享标识符聚类。
-- health = 0.3*helpful + 0.3*freshness + 0.2*consistency + 0.2*usage (各分量见 components)。
+- health = 0.4*helpful + 0.3*freshness + 0.2*consistency + 0.1*usage (各分量见 components)。
 - 策展任务: verify / update / deprecate / merge / fill_gap (promote_candidate 由 feedback 产生), 带优先级与证据。
 """
 from __future__ import annotations
@@ -32,6 +32,11 @@ GENERIC_TOKENS = {"在哪", "哪里", "配置", "设置", "什么", "错误", "�
                   "里配", "置文", "文件", "是什", "么配", "么意", "意思", "怎么", "多少", "出现"}
 DEPRECATED_RE = re.compile(r"废弃|deprecated|obsolete|已下线", re.I)
 RECOMPUTED_TYPES = ("verify", "update", "deprecate", "merge", "fill_gap")
+
+
+def _ranked(counter: Counter) -> list[str]:
+    """按频次降序、同频按字典序 (不依赖 set/Counter 的插入顺序, 否则 hash 随机化会让缺口标签与 fingerprint 每次运行不同)。"""
+    return [t for t, _ in sorted(counter.items(), key=lambda kv: (-kv[1], kv[0]))]
 
 
 def rank_weights(n: int) -> list[float]:
@@ -185,7 +190,7 @@ def detect_gaps(store: Store, turns, fb_by_turn, cites_by_turn, threshold: float
     for members in groups.values():
         idents = Counter(x for i in members for x in feats[i][0])
         toks = Counter(x for i in members for x in feats[i][1])
-        label = idents.most_common(1)[0][0] if idents else "+".join(t for t, _ in toks.most_common(2))
+        label = _ranked(idents)[0] if idents else "+".join(_ranked(toks)[:2])
         neg = sum(1 for i in members if cands[i][1])
         clusters.append(GapCluster(key=label, identifiers=sorted(idents), turn_ids=[cands[i][0].id for i in members],
                                    queries=[cands[i][0].query for i in members],
